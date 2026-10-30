@@ -22,11 +22,16 @@
         .order-header { border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px; }
         .order-id { font-weight: bold; color: #333; font-size: 1.05rem; }
         
-        /* 產品清單行樣式（每行帶獨立狀態） */
+        /* 產品清單行樣式 */
         .order-items { list-style: none; margin-top: 8px; }
-        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #f9f9f9; border-radius: 6px; margin-bottom: 6px; font-size: 0.95rem; }
-        .item-name { color: #333; font-weight: 500; }
-        .item-status { background: #e6f7ff; color: #0052a3; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; white-space: nowrap; margin-left: 10px; }
+        .item-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; background: #f9f9f9; border-radius: 6px; margin-bottom: 8px; font-size: 0.95rem; gap: 10px; }
+        .item-left { flex-grow: 1; }
+        .item-name { color: #333; font-weight: 500; display: block; margin-bottom: 3px; }
+        .item-meta { font-size: 0.82rem; color: #666; }
+        
+        .item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; white-space: nowrap; }
+        .item-status { background: #e6f7ff; color: #0052a3; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
+        .item-date { font-size: 0.75rem; color: #888; }
         
         .error-msg { color: #ff4d4f; font-weight: bold; text-align: center; margin-top: 10px; }
     </style>
@@ -41,7 +46,7 @@
             <input type="text" id="phoneInput" placeholder="例如: 91234567">
 
             <label for="orderSuffixInput">訂單編號最後 4 位數字：</label>
-            <input type="text" id="orderSuffixInput" placeholder="例如: 1024 (或完整訂單號)">
+            <input type="text" id="orderSuffixInput" placeholder="例如: 1024">
 
             <button onclick="searchOrders()">立即安全查詢</button>
             <div id="resultArea"></div>
@@ -88,13 +93,15 @@
                         return;
                     }
 
-                    // 2. 將相同訂單編號的資料群組化，並把每個產品及其對應狀態存入陣列
+                    // 2. 將相同訂單編號的資料群組化
                     let ordersMap = {};
                     matchedRows.forEach(row => {
                         let orderId = row["訂單編號"] || "未分類訂單";
                         let customerName = row["客戶姓名"] || "";
-                        let item = row["購買產品與數量"] || row["產品"] || "";
-                        let itemStatus = row["訂單狀態"] || row["狀態"] || "處理中"; // 每一行的獨立狀態
+                        let itemCode = row["產品代號"] || "";
+                        let itemName = row["產品名稱"] || "";
+                        let itemStatus = row["訂單狀態"] || row["狀態"] || "處理中";
+                        let updateDate = row["更新日期"] || ""; // 支援空白
 
                         if (!ordersMap[orderId]) {
                             ordersMap[orderId] = {
@@ -102,27 +109,38 @@
                                 items: []
                             };
                         }
-                        if (item) {
+                        if (itemName || itemCode) {
                             ordersMap[orderId].items.push({
-                                name: item,
-                                status: itemStatus
+                                code: itemCode,
+                                name: itemName,
+                                status: itemStatus,
+                                date: updateDate
                             });
                         }
                     });
 
-                    // 3. 組合 HTML 畫面（狀態移至每項產品右方）
+                    // 3. 組合 HTML 畫面
                     let html = `<h3 style="margin: 15px 0 10px 0; font-size:1.1rem; color:#444; text-align:left;">為你找到以下訂單：</h3>`;
                     
                     for (let orderId in ordersMap) {
                         let ord = ordersMap[orderId];
                         
-                        // 生成每一行產品及其右側狀態的 HTML
-                        let itemsHtml = ord.items.map(i => `
-                            <li class="item-row">
-                                <span class="item-name">• ${i.name}</span>
-                                <span class="item-status">${i.status}</span>
-                            </li>
-                        `).join('');
+                        let itemsHtml = ord.items.map(i => {
+                            let codeDisplay = i.code ? `[代號: ${i.code}] ` : '';
+                            let dateDisplay = i.date ? `<span class="item-date">更新: ${i.date}</span>` : '';
+                            
+                            return `
+                                <li class="item-row">
+                                    <div class="item-left">
+                                        <span class="item-name">${codeDisplay}${i.name}</span>
+                                    </div>
+                                    <div class="item-right">
+                                        <span class="item-status">${i.status}</span>
+                                        ${dateDisplay}
+                                    </div>
+                                </li>
+                            `;
+                        }).join('');
 
                         html += `
                             <div class="order-card">
@@ -130,7 +148,7 @@
                                     <span class="order-id">🔖 訂單編號: ${orderId}</span>
                                 </div>
                                 <p style="font-size:0.9rem; color:#666; margin-bottom:8px;">👤 客戶姓名：${ord.customerName}</p>
-                                <p style="font-size:0.9rem; font-weight:bold; margin-bottom:4px;">🛒 購買內容與明細狀態：</p>
+                                <p style="font-size:0.9rem; font-weight:bold; margin-bottom:4px;">🛒 購買明細：</p>
                                 <ul class="order-items">
                                     ${itemsHtml}
                                 </ul>
