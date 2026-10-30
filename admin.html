@@ -6,7 +6,7 @@
     <title>智能批次配貨後台</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #f0f2f5; color: #333; padding: 20px; }
+        body { background-color: #f0f2f5; color: #333; padding: 20px; position: relative; min-height: 100vh; padding-bottom: 50px; }
         .container { max-width: 500px; margin: 0 auto; }
         h1 { text-align: center; color: #d9363e; margin-bottom: 20px; }
         
@@ -25,6 +25,9 @@
 
         #authScreen { text-align: center; }
         #adminPanel { display: none; }
+
+        /* 左下角版本時間標籤 */
+        .version-badge { position: fixed; bottom: 10px; left: 15px; font-size: 0.75rem; color: #888; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px; border: 1px solid #e1e4e8; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -68,7 +71,24 @@
         </div>
     </div>
 
+    <!-- 左下角版本時間戳 -->
+    <div id="versionBadge" class="version-badge">Ver: 載入中...</div>
+
     <script>
+        // 自動生成左下角版本時間戳 (例如: 202610310148)
+        function initVersionTimestamp() {
+            let now = new Date();
+            let yyyy = now.getFullYear();
+            let mm = String(now.getMonth() + 1).padStart(2, '0');
+            let dd = String(now.getDate()).padStart(2, '0');
+            let hh = String(now.getHours()).padStart(2, '0');
+            let min = String(now.getMinutes()).padStart(2, '0');
+            
+            let versionStr = `${yyyy}${mm}${dd}${hh}${min}`;
+            document.getElementById('versionBadge').innerText = `Ver: ${versionStr}`;
+        }
+        initVersionTimestamp();
+
         const ADMIN_PWD = "123"; // 記得改成你的密碼
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyy0LGBNmmp8R94PzuGJbj8lyzZhkVIoClsUZ4o53kOVkLmNoc9dEL09gYmqTmVJVe82Q/exec"; // 記得換網址
 
@@ -143,13 +163,9 @@
                     if (actionType === 'preview') {
                         document.getElementById('execBtn').style.display = "block";
                     } else {
-                        // 正式執行完成後：
-                        // 1. 隱藏執行按鈕
                         document.getElementById('execBtn').style.display = "none";
-                        // 2. 清空產品代號及現貨數量輸入框
                         document.getElementById('itemCode').value = "";
                         document.getElementById('stock').value = "";
-                        // 3. 將游標自動跳回「產品代號」輸入框
                         document.getElementById('itemCode').focus();
                         
                         msgBox.innerHTML += "\n\n🎉 試算表更新已完成，輸入框已重設！";
