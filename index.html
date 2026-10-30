@@ -19,12 +19,14 @@
 
         /* 訂單卡片樣式 */
         .order-card { background: #fff; border: 1px solid #e1e4e8; border-left: 5px solid #0066cc; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
-        .order-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; }
-        .order-id { font-weight: bold; color: #333; }
-        .order-status { background: #e6f7ff; color: #0052a3; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; }
+        .order-header { border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px; }
+        .order-id { font-weight: bold; color: #333; font-size: 1.05rem; }
         
-        .order-items { margin-top: 8px; padding-left: 20px; color: #555; font-size: 0.95rem; }
-        .order-items li { margin-bottom: 4px; }
+        /* 產品清單行樣式（每行帶獨立狀態） */
+        .order-items { list-style: none; margin-top: 8px; }
+        .item-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #f9f9f9; border-radius: 6px; margin-bottom: 6px; font-size: 0.95rem; }
+        .item-name { color: #333; font-weight: 500; }
+        .item-status { background: #e6f7ff; color: #0052a3; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; white-space: nowrap; margin-left: 10px; }
         
         .error-msg { color: #ff4d4f; font-weight: bold; text-align: center; margin-top: 10px; }
     </style>
@@ -70,13 +72,12 @@
                 complete: function(results) {
                     let data = results.data;
 
-                    // 1. 同時過濾「電話相符」且「訂單編號包含/結尾是該4位數字」的行數
+                    // 1. 過濾符合電話及訂單尾數的行數
                     let matchedRows = data.filter(row => {
                         let rowPhone = (row["電話 (Key)"] || row["電話"] || "").trim();
                         let rowOrderId = (row["訂單編號"] || "").trim();
 
                         let phoneMatch = (rowPhone === phone);
-                        // 檢查訂單編號結尾是否包含輸入的數字（如果客人直接輸入完整的訂單編號也能匹配）
                         let suffixMatch = rowOrderId.endsWith(orderSuffix) || rowOrderId.includes(orderSuffix);
 
                         return phoneMatch && suffixMatch;
@@ -87,41 +88,49 @@
                         return;
                     }
 
-                    // 2. 將相同訂單編號的資料群組化
+                    // 2. 將相同訂單編號的資料群組化，並把每個產品及其對應狀態存入陣列
                     let ordersMap = {};
                     matchedRows.forEach(row => {
                         let orderId = row["訂單編號"] || "未分類訂單";
                         let customerName = row["客戶姓名"] || "";
                         let item = row["購買產品與數量"] || row["產品"] || "";
-                        let status = row["訂單狀態"] || "處理中";
+                        let itemStatus = row["訂單狀態"] || row["狀態"] || "處理中"; // 每一行的獨立狀態
 
                         if (!ordersMap[orderId]) {
                             ordersMap[orderId] = {
                                 customerName: customerName,
-                                status: status,
                                 items: []
                             };
                         }
                         if (item) {
-                            ordersMap[orderId].items.push(item);
+                            ordersMap[orderId].items.push({
+                                name: item,
+                                status: itemStatus
+                            });
                         }
                     });
 
-                    // 3. 組合 HTML 畫面
-                    let html = `<h3 style="margin: 15px 0 10px 0; font-size:1.1rem; color:#444;">為你找到以下訂單：</h3>`;
+                    // 3. 組合 HTML 畫面（狀態移至每項產品右方）
+                    let html = `<h3 style="margin: 15px 0 10px 0; font-size:1.1rem; color:#444; text-align:left;">為你找到以下訂單：</h3>`;
                     
                     for (let orderId in ordersMap) {
                         let ord = ordersMap[orderId];
-                        let itemsHtml = ord.items.map(i => `<li>${i}</li>`).join('');
+                        
+                        // 生成每一行產品及其右側狀態的 HTML
+                        let itemsHtml = ord.items.map(i => `
+                            <li class="item-row">
+                                <span class="item-name">• ${i.name}</span>
+                                <span class="item-status">${i.status}</span>
+                            </li>
+                        `).join('');
 
                         html += `
                             <div class="order-card">
                                 <div class="order-header">
                                     <span class="order-id">🔖 訂單編號: ${orderId}</span>
-                                    <span class="order-status">${ord.status}</span>
                                 </div>
-                                <p style="font-size:0.9rem; color:#666; margin-bottom:6px;">👤 客戶姓名：${ord.customerName}</p>
-                                <p style="font-size:0.9rem; font-weight:bold; margin-bottom:4px;">🛒 購買內容：</p>
+                                <p style="font-size:0.9rem; color:#666; margin-bottom:8px;">👤 客戶姓名：${ord.customerName}</p>
+                                <p style="font-size:0.9rem; font-weight:bold; margin-bottom:4px;">🛒 購買內容與明細狀態：</p>
                                 <ul class="order-items">
                                     ${itemsHtml}
                                 </ul>
