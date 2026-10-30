@@ -12,12 +12,20 @@
         
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
         
-        input, button { padding: 12px; font-size: 1rem; border: 1px solid #ddd; border-radius: 6px; outline: none; width: 100%; margin-bottom: 10px; }
-        button { background: #0066cc; color: white; border: none; cursor: pointer; transition: background 0.2s; font-weight: bold; }
+        label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 0.95rem; color: #444; }
+        input, button { padding: 12px; font-size: 1rem; border: 1px solid #ddd; border-radius: 6px; outline: none; width: 100%; margin-bottom: 15px; }
+        button { background: #0066cc; color: white; border: none; cursor: pointer; transition: background 0.2s; font-weight: bold; margin-bottom: 0; }
         button:hover { background: #0052a3; }
 
-        .order-card { background: #f9f9f9; border-left: 4px solid #0066cc; padding: 12px; margin-bottom: 10px; border-radius: 4px; }
-        .order-card p { margin-bottom: 6px; font-size: 0.95rem; }
+        /* 訂單卡片樣式 */
+        .order-card { background: #fff; border: 1px solid #e1e4e8; border-left: 5px solid #0066cc; padding: 15px; margin-bottom: 15px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .order-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 8px; }
+        .order-id { font-weight: bold; color: #333; }
+        .order-status { background: #e6f7ff; color: #0052a3; padding: 4px 10px; border-radius: 20px; font-size: 0.85rem; font-weight: bold; }
+        
+        .order-items { margin-top: 8px; padding-left: 20px; color: #555; font-size: 0.95rem; }
+        .order-items li { margin-bottom: 4px; }
+        
         .error-msg { color: #ff4d4f; font-weight: bold; text-align: center; margin-top: 10px; }
     </style>
 </head>
@@ -27,62 +35,104 @@
         <h1>📦 客戶訂單查詢</h1>
 
         <div class="card">
-            <label for="phoneInput" style="display:block; margin-bottom:8px; font-weight:bold;">請輸入你的聯絡電話：</label>
+            <label for="phoneInput">聯絡電話：</label>
             <input type="text" id="phoneInput" placeholder="例如: 91234567">
-            <button onclick="searchOrders()">立即查詢</button>
+
+            <label for="orderSuffixInput">訂單編號最後 4 位數字：</label>
+            <input type="text" id="orderSuffixInput" placeholder="例如: 1024 (或完整訂單號)">
+
+            <button onclick="searchOrders()">立即安全查詢</button>
             <div id="resultArea"></div>
         </div>
     </div>
 
-    <!-- 引入 PapaParse 套件用黎輕鬆讀取 Google Sheets 嘅 CSV -->
+    <!-- 引入 PapaParse 套件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script>
-        // ⚠️ 請將下面呢行嘅網址，換成你頭先喺 Google 試算表「發布到網路」拎到嘅 CSV 網址！
+        // ⚠️ 確保呢條係你 Google 試算表發布嘅 CSV 網址
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRADaT7B1mQiXOsnvT-IKmaal4NFWLY4krk_gDN-UZ0AFvhyq_-OAexLNN9JW2EXwoxis2GXQc2Bt4u/pub?gid=0&single=true&output=csv";
 
         function searchOrders() {
             let phone = document.getElementById('phoneInput').value.trim();
+            let orderSuffix = document.getElementById('orderSuffixInput').value.trim();
             let resultArea = document.getElementById('resultArea');
 
-            if (phone === "") {
-                resultArea.innerHTML = `<p class="error-msg">請輸入電話號碼先可以查詢！</p>`;
+            if (phone === "" || orderSuffix === "") {
+                resultArea.innerHTML = `<p class="error-msg">請完整填寫電話號碼及訂單最後 4 位數字！</p>`;
                 return;
             }
 
-            resultArea.innerHTML = `<p style="text-align:center; color:#666; margin-top:10px;">查詢中，請稍候...</p>`;
+            resultArea.innerHTML = `<p style="text-align:center; color:#666; margin-top:10px;">安全查詢中，請稍候...</p>`;
 
-            // 下載並讀取 Google Sheets CSV 資料
             Papa.parse(SHEET_CSV_URL, {
                 download: true,
-                header: true, // 自動將第一行當作欄位名稱
+                header: true,
                 complete: function(results) {
                     let data = results.data;
-                    // 過濾出符合該電話號碼的所有行
-                    let matchedOrders = data.filter(row => row["電話 (Key)"] && row["電話 (Key)"].trim() === phone);
 
-                    if (matchedOrders.length === 0) {
-                        resultArea.innerHTML = `<p class="error-msg">搵唔到相關電話嘅訂單記錄，請確認輸入是否正確。</p>`;
+                    // 1. 同時過濾「電話相符」且「訂單編號包含/結尾是該4位數字」的行數
+                    let matchedRows = data.filter(row => {
+                        let rowPhone = (row["電話 (Key)"] || row["電話"] || "").trim();
+                        let rowOrderId = (row["訂單編號"] || "").trim();
+
+                        let phoneMatch = (rowPhone === phone);
+                        // 檢查訂單編號結尾是否包含輸入的數字（如果客人直接輸入完整的訂單編號也能匹配）
+                        let suffixMatch = rowOrderId.endsWith(orderSuffix) || rowOrderId.includes(orderSuffix);
+
+                        return phoneMatch && suffixMatch;
+                    });
+
+                    if (matchedRows.length === 0) {
+                        resultArea.innerHTML = `<p class="error-msg">搵唔到符合嘅記錄，請確認電話同訂單編號後 4 位是否正確。</p>`;
                         return;
                     }
 
-                    // 顯示結果
-                    let html = `<h3 style="margin: 15px 0 10px 0; font-size:1.1rem; color:#444;">為你找到以下記錄 (${matchedOrders.length} 筆)：</h3>`;
+                    // 2. 將相同訂單編號的資料群組化
+                    let ordersMap = {};
+                    matchedRows.forEach(row => {
+                        let orderId = row["訂單編號"] || "未分類訂單";
+                        let customerName = row["客戶姓名"] || "";
+                        let item = row["購買產品與數量"] || row["產品"] || "";
+                        let status = row["訂單狀態"] || "處理中";
+
+                        if (!ordersMap[orderId]) {
+                            ordersMap[orderId] = {
+                                customerName: customerName,
+                                status: status,
+                                items: []
+                            };
+                        }
+                        if (item) {
+                            ordersMap[orderId].items.push(item);
+                        }
+                    });
+
+                    // 3. 組合 HTML 畫面
+                    let html = `<h3 style="margin: 15px 0 10px 0; font-size:1.1rem; color:#444;">為你找到以下訂單：</h3>`;
                     
-                    matchedOrders.forEach(order => {
+                    for (let orderId in ordersMap) {
+                        let ord = ordersMap[orderId];
+                        let itemsHtml = ord.items.map(i => `<li>${i}</li>`).join('');
+
                         html += `
                             <div class="order-card">
-                                <p><strong>👤 客戶姓名：</strong>${order["客戶姓名"]}</p>
-                                <p><strong>🔖 訂單編號：</strong>${order["訂單編號"]}</p>
-                                <p><strong>🛒 購買內容：</strong>${order["購買產品與數量"]}</p>
-                                <p><strong>📊 訂單狀態：</strong><span style="color:#0066cc; font-weight:bold;">${order["訂單狀態"]}</span></p>
+                                <div class="order-header">
+                                    <span class="order-id">🔖 訂單編號: ${orderId}</span>
+                                    <span class="order-status">${ord.status}</span>
+                                </div>
+                                <p style="font-size:0.9rem; color:#666; margin-bottom:6px;">👤 客戶姓名：${ord.customerName}</p>
+                                <p style="font-size:0.9rem; font-weight:bold; margin-bottom:4px;">🛒 購買內容：</p>
+                                <ul class="order-items">
+                                    ${itemsHtml}
+                                </ul>
                             </div>
                         `;
-                    });
+                    }
 
                     resultArea.innerHTML = html;
                 },
                 error: function(err) {
-                    resultArea.innerHTML = `<p class="error-msg">讀取資料失敗，請檢查 Google 試算表網址是否正確發布。</p>`;
+                    resultArea.innerHTML = `<p class="error-msg">讀取資料失敗，請檢查 Google 試算表網址。</p>`;
                 }
             });
         }
