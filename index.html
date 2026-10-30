@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>我的實用小工具網站</title>
+    <title>客戶訂單查詢系統</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f0f2f5; color: #333; padding: 20px; }
@@ -11,133 +11,80 @@
         h1 { text-align: center; color: #0066cc; margin-bottom: 20px; }
         
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
-        h2 { font-size: 1.2rem; margin-bottom: 15px; color: #444; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; }
         
-        /* 共通表單樣式 */
-        input, button { padding: 10px; font-size: 1rem; border: 1px solid #ddd; border-radius: 6px; outline: none; }
-        input { width: 100%; margin-bottom: 10px; }
-        button { background: #0066cc; color: white; border: none; cursor: pointer; transition: background 0.2s; }
+        input, button { padding: 12px; font-size: 1rem; border: 1px solid #ddd; border-radius: 6px; outline: none; width: 100%; margin-bottom: 10px; }
+        button { background: #0066cc; color: white; border: none; cursor: pointer; transition: background 0.2s; font-weight: bold; }
         button:hover { background: #0052a3; }
 
-        /* To-Do List 樣式 */
-        .todo-input-group { display: flex; gap: 10px; }
-        .todo-input-group input { margin-bottom: 0; }
-        ul { list-style: none; margin-top: 15px; }
-        li { display: flex; justify-content: space-between; align-items: center; padding: 8px 10px; background: #f9f9f9; border-radius: 6px; margin-bottom: 8px; }
-        li.completed span { text-decoration: line-through; color: #888; }
-        .delete-btn { background: #ff4d4f; padding: 4px 8px; font-size: 0.85rem; }
-        .delete-btn:hover { background: #d9363e; }
-
-        /* 計算機樣式 */
-        .calc-grid { display: grid; gap: 10px; }
-        .result-box { margin-top: 10px; padding: 10px; background: #e6f7ff; border-radius: 6px; font-weight: bold; color: #0052a3; }
+        .order-card { background: #f9f9f9; border-left: 4px solid #0066cc; padding: 12px; margin-bottom: 10px; border-radius: 4px; }
+        .order-card p { margin-bottom: 6px; font-size: 0.95rem; }
+        .error-msg { color: #ff4d4f; font-weight: bold; text-align: center; margin-top: 10px; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>🛠️ 我的實用小工具</h1>
+        <h1>📦 客戶訂單查詢</h1>
 
-        <!-- 工具一：折扣計算機 -->
         <div class="card">
-            <h2>💰 折扣與含稅計算機</h2>
-            <div class="calc-grid">
-                <input type="number" id="price" placeholder="輸入原價 (例如: 299)">
-                <input type="number" id="discount" placeholder="輸入折扣百分比 (例如: 八折請填 20)">
-                <input type="number" id="tax" placeholder="輸入消費稅率 % (可填 0)">
-                <button onclick="calculate()">計算最終價格</button>
-            </div>
-            <div id="calcResult" class="result-box" style="display: none;"></div>
-        </div>
-
-        <!-- 工具二：待辦事項 -->
-        <div class="card">
-            <h2>📝 待辦事項清單 (自動保存)</h2>
-            <div class="todo-input-group">
-                <input type="text" id="todoInput" placeholder="輸入新任務...">
-                <button onclick="addTodo()">新增</button>
-            </div>
-            <ul id="todoList"></ul>
-        </div>
-
-        <!-- 工具三：隨機抽籤 -->
-        <div class="card">
-            <h2>🎲 隨機抽籤器</h2>
-            <input type="text" id="pickerInput" placeholder="輸入選項，用逗號隔開 (例如: 漢堡, 壽司, 意粉)">
-            <button onclick="pickRandom()">隨機抽取！</button>
-            <div id="pickerResult" class="result-box" style="display: none;"></div>
+            <label for="phoneInput" style="display:block; margin-bottom:8px; font-weight:bold;">請輸入你的聯絡電話：</label>
+            <input type="text" id="phoneInput" placeholder="例如: 91234567">
+            <button onclick="searchOrders()">立即查詢</button>
+            <div id="resultArea"></div>
         </div>
     </div>
 
+    <!-- 引入 PapaParse 套件用黎輕鬆讀取 Google Sheets 嘅 CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script>
-        // 1. 計算機邏輯
-        function calculate() {
-            let price = parseFloat(document.getElementById('price').value) || 0;
-            let discount = parseFloat(document.getElementById('discount').value) || 0;
-            let tax = parseFloat(document.getElementById('tax').value) || 0;
+        // ⚠️ 請將下面呢行嘅網址，換成你頭先喺 Google 試算表「發布到網路」拎到嘅 CSV 網址！
+        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRADaT7B1mQiXOsnvT-IKmaal4NFWLY4krk_gDN-UZ0AFvhyq_-OAexLNN9JW2EXwoxis2GXQc2Bt4u/pub?gid=0&single=true&output=csv";
 
-            let afterDiscount = price * (1 - discount / 100);
-            let finalPrice = afterDiscount * (1 + tax / 100);
-            let saved = price - afterDiscount;
+        function searchOrders() {
+            let phone = document.getElementById('phoneInput').value.trim();
+            let resultArea = document.getElementById('resultArea');
 
-            let resultDiv = document.getElementById('calcResult');
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = `折實價：$${afterDiscount.toFixed(2)} (省了 $${saved.toFixed(2)})<br>含稅總價：$${finalPrice.toFixed(2)}`;
-        }
-
-        // 2. 待辦事項邏輯 (連 localStorage 保存)
-        let todos = JSON.parse(localStorage.getItem('todos')) || [];
-
-        function renderTodos() {
-            let list = document.getElementById('todoList');
-            list.innerHTML = '';
-            todos.forEach((todo, index) => {
-                let li = document.createElement('li');
-                if (todo.completed) li.classList.add('completed');
-                li.innerHTML = `
-                    <span onclick="toggleTodo(${index})" style="cursor:pointer; flex-grow:1;">${todo.text}</span>
-                    <button class="delete-btn" onclick="deleteTodo(${index})">刪除</button>
-                `;
-                list.appendChild(li);
-            });
-            localStorage.setItem('todos', JSON.stringify(todos));
-        }
-
-        function addTodo() {
-            let input = document.getElementById('todoInput');
-            if (input.value.trim() === '') return;
-            todos.push({ text: input.value, completed: false });
-            input.value = '';
-            renderTodos();
-        }
-
-        function toggleTodo(index) {
-            todos[index].completed = !todos[index].completed;
-            renderTodos();
-        }
-
-        function deleteTodo(index) {
-            todos.splice(index, 1);
-            renderTodos();
-        }
-
-        renderTodos();
-
-        // 3. 隨機抽籤邏輯
-        function pickRandom() {
-            let input = document.getElementById('pickerInput').value;
-            let items = input.split(',').map(item => item.trim()).filter(item => item !== '');
-            let resultDiv = document.getElementById('pickerResult');
-            
-            if (items.length === 0) {
-                resultDiv.style.display = 'block';
-                resultDiv.innerHTML = '請至少輸入一個選項！';
+            if (phone === "") {
+                resultArea.innerHTML = `<p class="error-msg">請輸入電話號碼先可以查詢！</p>`;
                 return;
             }
 
-            let winner = items[Math.floor(Math.random() * items.length)];
-            resultDiv.style.display = 'block';
-            resultDiv.innerHTML = `🎉 抽中結果：<strong>${winner}</strong>`;
+            resultArea.innerHTML = `<p style="text-align:center; color:#666; margin-top:10px;">查詢中，請稍候...</p>`;
+
+            // 下載並讀取 Google Sheets CSV 資料
+            Papa.parse(SHEET_CSV_URL, {
+                download: true,
+                header: true, // 自動將第一行當作欄位名稱
+                complete: function(results) {
+                    let data = results.data;
+                    // 過濾出符合該電話號碼的所有行
+                    let matchedOrders = data.filter(row => row["電話 (Key)"] && row["電話 (Key)"].trim() === phone);
+
+                    if (matchedOrders.length === 0) {
+                        resultArea.innerHTML = `<p class="error-msg">搵唔到相關電話嘅訂單記錄，請確認輸入是否正確。</p>`;
+                        return;
+                    }
+
+                    // 顯示結果
+                    let html = `<h3 style="margin: 15px 0 10px 0; font-size:1.1rem; color:#444;">為你找到以下記錄 (${matchedOrders.length} 筆)：</h3>`;
+                    
+                    matchedOrders.forEach(order => {
+                        html += `
+                            <div class="order-card">
+                                <p><strong>👤 客戶姓名：</strong>${order["客戶姓名"]}</p>
+                                <p><strong>🔖 訂單編號：</strong>${order["訂單編號"]}</p>
+                                <p><strong>🛒 購買內容：</strong>${order["購買產品與數量"]}</p>
+                                <p><strong>📊 訂單狀態：</strong><span style="color:#0066cc; font-weight:bold;">${order["訂單狀態"]}</span></p>
+                            </div>
+                        `;
+                    });
+
+                    resultArea.innerHTML = html;
+                },
+                error: function(err) {
+                    resultArea.innerHTML = `<p class="error-msg">讀取資料失敗，請檢查 Google 試算表網址是否正確發布。</p>`;
+                }
+            });
         }
     </script>
 </body>
