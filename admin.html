@@ -14,12 +14,14 @@
         
         label { display: block; margin-bottom: 6px; font-weight: bold; font-size: 0.95rem; color: #444; }
         input, select, button { padding: 12px; font-size: 1rem; border: 1px solid #ddd; border-radius: 6px; outline: none; width: 100%; margin-bottom: 15px; background: #fff; }
-        button { background: #d9363e; color: white; border: none; cursor: pointer; transition: background 0.2s; font-weight: bold; margin-bottom: 0; }
-        button:hover { background: #b52a30; }
+        
+        .btn-preview { background: #1890ff; color: white; border: none; cursor: pointer; font-weight: bold; }
+        .btn-preview:hover { background: #096dd9; }
 
-        .msg { margin-top: 15px; padding: 12px; border-radius: 6px; text-align: left; font-size: 0.9rem; font-weight: bold; display: none; line-height: 1.4; }
-        .msg.success { background: #f6ffed; color: #389e0d; border: 1px solid #b7eb8f; }
-        .msg.error { background: #fff2f0; color: #ff4d4f; border: 1px solid #ffccc7; }
+        .btn-execute { background: #52c41a; color: white; border: none; cursor: pointer; font-weight: bold; display: none; }
+        .btn-execute:hover { background: #389e0d; }
+
+        .msg { margin-top: 15px; padding: 12px; border-radius: 6px; text-align: left; font-size: 0.9rem; font-weight: bold; display: none; line-height: 1.5; white-space: pre-line; background: #fafafa; border: 1px solid #d9d9d9; color: #333; }
 
         #authScreen { text-align: center; }
         #adminPanel { display: none; }
@@ -30,15 +32,13 @@
     <div class="container">
         <h1>🔐 管理員安全驗證</h1>
 
-        <!-- 密碼登入畫面 -->
         <div class="card" id="authScreen">
             <label for="adminPassword">請輸入管理員密碼：</label>
             <input type="password" id="adminPassword" placeholder="輸入密碼" onkeypress="handleAuthKey(event)">
-            <button onclick="checkPassword()">登入後台</button>
-            <div id="authMsg" class="msg error" style="display:none; margin-top:10px; text-align:center;">密碼錯誤！</div>
+            <button class="btn-preview" onclick="checkPassword()" style="margin-bottom:0;">登入後台</button>
+            <div id="authMsg" style="display:none; margin-top:10px; color: #ff4d4f; font-weight:bold;">密碼錯誤！</div>
         </div>
 
-        <!-- 管理面板 -->
         <div id="adminPanel">
             <div class="card">
                 <h2 style="font-size: 1.2rem; margin-bottom: 15px; color: #333;">📦 智能批次配貨系統</h2>
@@ -47,11 +47,11 @@
                 <input type="text" id="itemCode" placeholder="例如: 0001" onkeypress="handleFormKey(event, 'stock')">
 
                 <label for="stock">現貨總數量（我有幾多件現貨可以派）：</label>
-                <input type="number" id="stock" placeholder="例如: 10" onkeypress="handleFormKey(event, 'submit')">
+                <input type="number" id="stock" placeholder="例如: 10" onkeypress="handleFormKey(event, 'preview')">
 
                 <label for="newStatus">設定新狀態：</label>
                 <select id="newStatus">
-                    <option value="已到貨(可到店取貨)">已到貨(可到店取貨)</option>
+                    <option value="已到貨(可到店取)">已到貨(可到店取)</option>
                     <option value="在訂中">在訂中</option>
                     <option value="已完成">已完成</option>
                 </select>
@@ -59,29 +59,28 @@
                 <label for="newDate">更新日期：</label>
                 <input type="text" id="newDate" placeholder="留空則自動填寫今日">
 
-                <button onclick="batchAllocate()">開始智慧配貨</button>
+                <!-- 雙按鈕設計 -->
+                <button class="btn-preview" onclick="runAllocation('preview')">🔍 1. 先預覽配貨結果</button>
+                <button id="execBtn" class="btn-execute" onclick="runAllocation('execute')">🚀 2. 確認無誤，正式執行配貨</button>
+
                 <div id="responseMsg" class="msg"></div>
             </div>
         </div>
     </div>
 
     <script>
-        const ADMIN_PWD = "123"; // 記得改成你想要嘅密碼
+        const ADMIN_PWD = "123"; // 記得改成你的密碼
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyy0LGBNmmp8R94PzuGJbj8lyzZhkVIoClsUZ4o53kOVkLmNoc9dEL09gYmqTmVJVe82Q/exec"; // 記得換網址
 
-        // 登入密碼框按 Enter 自動登入
         function handleAuthKey(e) {
-            if (e.key === 'Enter') {
-                checkPassword();
-            }
+            if (e.key === 'Enter') checkPassword();
         }
 
-        // 表單輸入框按 Enter 自動跳行或執行
         function handleFormKey(e, nextFieldId) {
             if (e.key === 'Enter') {
-                e.preventDefault(); // 防止表單預設提交
-                if (nextFieldId === 'submit') {
-                    batchAllocate();
+                e.preventDefault();
+                if (nextFieldId === 'preview') {
+                    runAllocation('preview');
                 } else {
                     document.getElementById(nextFieldId).focus();
                 }
@@ -93,14 +92,13 @@
             if (inputPwd === ADMIN_PWD) {
                 document.getElementById('authScreen').style.display = 'none';
                 document.getElementById('adminPanel').style.display = 'block';
-                // 登入後自動將游標聚焦喺「產品代號」
                 document.getElementById('itemCode').focus();
             } else {
                 document.getElementById('authMsg').style.display = 'block';
             }
         }
 
-        function batchAllocate() {
+        function runAllocation(actionType) {
             let itemCode = document.getElementById('itemCode').value.trim();
             let stock = document.getElementById('stock').value.trim();
             let newStatus = document.getElementById('newStatus').value;
@@ -109,8 +107,7 @@
 
             if (itemCode === "" || stock === "") {
                 msgBox.style.display = "block";
-                msgBox.className = "msg error";
-                msgBox.innerHTML = "請填寫「產品代號」及「現貨總數量」！";
+                msgBox.innerHTML = "❌ 請先填寫「產品代號」及「現貨總數量」！";
                 return;
             }
 
@@ -123,28 +120,41 @@
             }
 
             msgBox.style.display = "block";
-            msgBox.className = "msg";
             msgBox.style.color = "#666";
-            msgBox.innerHTML = "正在進行智慧庫存匹配，請稍候...";
+            msgBox.innerHTML = (actionType === 'preview') ? "🔍 正在分析庫存與訂單，產生預覽報告中..." : "🚀 正在寫入試算表並更新狀態，請稍候...";
 
             let payload = {
+                action: actionType,
                 itemCode: itemCode,
                 stock: stock,
                 newStatus: newStatus,
                 newDate: newDate
             };
 
+            // 這裡使用標準 fetch 來接收後台回傳的詳細文字報告
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
-                mode: "no-cors",
-                headers: { "Content-Type": "application/json" },
+                headers: { "Content-Type": "text/plain;charset=utf-8" },
                 body: JSON.stringify(payload)
-            }).then(() => {
-                msgBox.className = "msg success";
-                msgBox.innerHTML = "✅ 配貨指令已發送！請檢查 Google 試算表以確認庫存扣減及狀態更新。";
-            }).catch(error => {
-                msgBox.className = "msg error";
-                msgBox.innerHTML = "❌ 失敗：" + error;
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    msgBox.innerHTML = data.message;
+                    if (actionType === 'preview') {
+                        // 預覽成功後，顯示「正式執行」按鈕，讓用戶可以點擊確認
+                        document.getElementById('execBtn').style.display = "block";
+                    } else {
+                        // 正式執行後，隱藏執行按鈕，提示完成
+                        document.getElementById('execBtn').style.display = "none";
+                        msgBox.innerHTML += "\n\n🎉 試算表更新已全部完成！";
+                    }
+                } else {
+                    msgBox.innerHTML = "❌ 發生錯誤：" + data.message;
+                }
+            })
+            .catch(error => {
+                msgBox.innerHTML = "❌ 連線失敗：" + error;
             });
         }
     </script>
