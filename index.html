@@ -6,7 +6,7 @@
     <title>客戶訂單查詢系統</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #f0f2f5; color: #333; padding: 20px; }
+        body { background-color: #f0f2f5; color: #333; padding: 20px; position: relative; min-height: 100vh; padding-bottom: 50px; }
         .container { max-width: 600px; margin: 0 auto; }
         h1 { text-align: center; color: #0066cc; margin-bottom: 20px; }
         
@@ -36,6 +36,9 @@
         .item-date { font-size: 0.75rem; color: #888; }
         
         .error-msg { color: #ff4d4f; font-weight: bold; text-align: center; margin-top: 10px; }
+
+        /* 左下角版本時間標籤 */
+        .version-badge { position: fixed; bottom: 10px; left: 15px; font-size: 0.75rem; color: #888; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px; border: 1px solid #e1e4e8; pointer-events: none; }
     </style>
 </head>
 <body>
@@ -45,19 +48,48 @@
 
         <div class="card">
             <label for="phoneInput">聯絡電話：</label>
-            <input type="text" id="phoneInput" placeholder="例如: 91234567">
+            <input type="text" id="phoneInput" placeholder="例如: 91234567" onkeypress="handleKey(event, 'orderSuffixInput')">
 
             <label for="orderSuffixInput">訂單編號最後 4 位數字：</label>
-            <input type="text" id="orderSuffixInput" placeholder="例如: 1024">
+            <input type="text" id="orderSuffixInput" placeholder="例如: 1024" onkeypress="handleKey(event, 'search')">
 
             <button onclick="searchOrders()">立即安全查詢</button>
             <div id="resultArea"></div>
         </div>
     </div>
 
+    <!-- 左下角版本時間戳 -->
+    <div id="versionBadge" class="version-badge">版本載入中...</div>
+
     <!-- 引入 PapaParse 套件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script>
+        // 自動生成左下角版本時間戳 (例如: 202610310135)
+        function updateVersionTimestamp() {
+            let now = new Date();
+            let yyyy = now.getFullYear();
+            let mm = String(now.getMonth() + 1).padStart(2, '0');
+            let dd = String(now.getDate()).padStart(2, '0');
+            let hh = String(now.getHours()).padStart(2, '0');
+            let min = String(now.getMinutes()).padStart(2, '0');
+            
+            let versionStr = `${yyyy}${mm}${dd}${hh}${min}`;
+            document.getElementById('versionBadge').innerText = `Ver: ${versionStr}`;
+        }
+        updateVersionTimestamp();
+
+        // 支援 Enter 鍵跳行或觸發查詢
+        function handleKey(e, nextId) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                if (nextId === 'search') {
+                    searchOrders();
+                } else {
+                    document.getElementById(nextId).focus();
+                }
+            }
+        }
+
         // Google 試算表發布的 CSV 網址
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRADaT7B1mQiXOsnvT-IKmaal4NFWLY4krk_gDN-UZ0AFvhyq_-OAexLNN9JW2EXwoxis2GXQc2Bt4u/pub?gid=0&single=true&output=csv";
 
@@ -79,7 +111,6 @@
                 complete: function(results) {
                     let data = results.data;
 
-                    // 1. 過濾符合電話及訂單尾數的資料
                     let matchedRows = data.filter(row => {
                         let rowPhone = (row["電話 (Key)"] || row["電話"] || "").trim();
                         let rowOrderId = (row["訂單編號"] || "").trim();
@@ -95,14 +126,13 @@
                         return;
                     }
 
-                    // 2. 將相同訂單編號的資料群組化
                     let ordersMap = {};
                     matchedRows.forEach(row => {
                         let orderId = row["訂單編號"] || "未分類訂單";
                         let customerName = row["客戶姓名"] || "";
                         let itemCode = row["產品代號"] || "";
                         let itemName = row["產品名稱"] || "";
-                        let itemQty = row["數量訂單"] || row["數量"] || "1"; // 讀取「數量訂單」欄位
+                        let itemQty = row["數量訂單"] || row["數量"] || "1";
                         let itemStatus = row["訂單狀態"] || row["狀態"] || "處理中";
                         let updateDate = row["更新日期"] || "";
 
@@ -123,7 +153,6 @@
                         }
                     });
 
-                    // 3. 組合 HTML 畫面
                     let html = `<h3 style="margin: 15px 0 10px 0; font-size:1.1rem; color:#444; text-align:left;">為你找到以下訂單：</h3>`;
                     
                     for (let orderId in ordersMap) {
