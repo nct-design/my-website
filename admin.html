@@ -30,28 +30,30 @@
     <div class="container">
         <h1>🔐 管理員安全驗證</h1>
 
+        <!-- 密碼登入畫面 -->
         <div class="card" id="authScreen">
             <label for="adminPassword">請輸入管理員密碼：</label>
-            <input type="password" id="adminPassword" placeholder="輸入密碼">
+            <input type="password" id="adminPassword" placeholder="輸入密碼" onkeypress="handleAuthKey(event)">
             <button onclick="checkPassword()">登入後台</button>
             <div id="authMsg" class="msg error" style="display:none; margin-top:10px; text-align:center;">密碼錯誤！</div>
         </div>
 
+        <!-- 管理面板 -->
         <div id="adminPanel">
             <div class="card">
                 <h2 style="font-size: 1.2rem; margin-bottom: 15px; color: #333;">📦 智能批次配貨系統</h2>
                 
                 <label for="itemCode">產品代號：</label>
-                <input type="text" id="itemCode" placeholder="例如: 0001">
+                <input type="text" id="itemCode" placeholder="例如: 0001" onkeypress="handleFormKey(event, 'stock')">
 
                 <label for="stock">現貨總數量（我有幾多件現貨可以派）：</label>
-                <input type="number" id="stock" placeholder="例如: 10">
+                <input type="number" id="stock" placeholder="例如: 10" onkeypress="handleFormKey(event, 'submit')">
 
                 <label for="newStatus">設定新狀態：</label>
                 <select id="newStatus">
-                    <option value="已配貨">已配貨 (留貨成功)</option>
-                    <option value="已發貨">已發貨</option>
-                    <option value="執貨中">執貨中</option>
+                    <option value="已到貨(可到店取貨)">已到貨(可到店取貨)</option>
+                    <option value="在訂中">在訂中</option>
+                    <option value="已完成">已完成</option>
                 </select>
 
                 <label for="newDate">更新日期：</label>
@@ -64,14 +66,35 @@
     </div>
 
     <script>
-        const ADMIN_PWD = "你的專屬管理密碼123"; // 記得改成你想要嘅密碼
+        const ADMIN_PWD = "123"; // 記得改成你想要嘅密碼
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyy0LGBNmmp8R94PzuGJbj8lyzZhkVIoClsUZ4o53kOVkLmNoc9dEL09gYmqTmVJVe82Q/exec"; // 記得換網址
+
+        // 登入密碼框按 Enter 自動登入
+        function handleAuthKey(e) {
+            if (e.key === 'Enter') {
+                checkPassword();
+            }
+        }
+
+        // 表單輸入框按 Enter 自動跳行或執行
+        function handleFormKey(e, nextFieldId) {
+            if (e.key === 'Enter') {
+                e.preventDefault(); // 防止表單預設提交
+                if (nextFieldId === 'submit') {
+                    batchAllocate();
+                } else {
+                    document.getElementById(nextFieldId).focus();
+                }
+            }
+        }
 
         function checkPassword() {
             let inputPwd = document.getElementById('adminPassword').value;
             if (inputPwd === ADMIN_PWD) {
                 document.getElementById('authScreen').style.display = 'none';
                 document.getElementById('adminPanel').style.display = 'block';
+                // 登入後自動將游標聚焦喺「產品代號」
+                document.getElementById('itemCode').focus();
             } else {
                 document.getElementById('authMsg').style.display = 'block';
             }
@@ -111,9 +134,6 @@
                 newDate: newDate
             };
 
-            // 注意：因為 Apps Script 回傳咗文字結果，但使用 no-cors 模式無法直接用 .json() 讀取詳細回傳內容
-            // 如果想睇詳細配貨報告，可以將 Apps Script 部署為 Web App 時，將「誰可以存取」維持 Anyone，
-            // 並且使用標準 fetch (不設 mode: 'no-cors')。不過如果你遇到 CORS 問題，用返下面呢個簡化版通知亦可：
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
                 mode: "no-cors",
