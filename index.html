@@ -1,36 +1,534 @@
 <!DOCTYPE html>
-<html lang="zh-HK">
+<html lang="zh-HK" class="scroll-smooth dark">
 <head>
     <meta charset="UTF-8">
-    <title>我嘅個人網頁</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Alex Chen | 現代個人作品集與服務網頁</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#0369a1',
+                        }
+                    },
+                    animation: {
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-glow': 'pulseGlow 4s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0px)' },
+                            '50%': { transform: 'translateY(-15px)' },
+                        },
+                        pulseGlow: {
+                            '0%, 100%': { opacity: '0.4' },
+                            '50%': { opacity: '0.8' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
-            font-family: Arial, sans-serif;
-            text-align: center;
-            background-color: #f4f4f9;
-            color: #333;
-            padding-top: 50px;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
         }
-        h1 {
-            color: #0066cc;
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-        .card {
-            background: white;
-            width: 300px;
-            margin: 0 auto;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 9999px;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #334155;
         }
     </style>
 </head>
-<body>
+<body class="bg-slate-50 text-slate-800 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-300 antialiased relative min-h-screen">
 
-    <div class="card">
-        <h1>Hello World! 👋</h1>
-        <p>歡迎嚟到我嘅個人網頁！</p>
-        <p>呢個網頁係用最基礎嘅 HTML 同 CSS 整嘅。</p>
+    <!-- Ambient Glowing Background Bubbles -->
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden pointer-events-none -z-10">
+        <div class="absolute -top-40 -left-40 w-96 h-96 bg-sky-500/20 dark:bg-sky-500/10 rounded-full blur-3xl animate-pulse-glow"></div>
+        <div class="absolute top-1/3 -right-40 w-96 h-96 bg-indigo-500/20 dark:bg-indigo-500/10 rounded-full blur-3xl animate-pulse-glow" style="animation-delay: 2s;"></div>
+        <div class="absolute -bottom-40 left-1/3 w-96 h-96 bg-purple-500/20 dark:bg-purple-500/10 rounded-full blur-3xl animate-pulse-glow" style="animation-delay: 4s;"></div>
     </div>
 
+    <!-- Navigation Bar (Glassmorphism) -->
+    <header class="fixed top-0 left-0 w-full z-40 px-4 py-3">
+        <div class="max-w-6xl mx-auto backdrop-blur-md bg-white/70 dark:bg-slate-900/70 border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-lg px-6 py-3 flex items-center justify-between transition-all">
+            <!-- Brand Logo -->
+            <a href="#home" class="text-xl font-bold bg-gradient-to-r from-sky-500 to-indigo-600 bg-clip-text text-transparent flex items-center gap-2">
+                <i class="fa-solid fa-code text-sky-500"></i>
+                <span>Alex.Dev</span>
+            </a>
+
+            <!-- Desktop Nav Links -->
+            <nav class="hidden md:flex items-center space-x-8 text-sm font-medium">
+                <a href="#home" class="hover:text-sky-500 dark:hover:text-sky-400 transition-colors">首頁</a>
+                <a href="#about" class="hover:text-sky-500 dark:hover:text-sky-400 transition-colors">關於我</a>
+                <a href="#works" class="hover:text-sky-500 dark:hover:text-sky-400 transition-colors">作品與服務</a>
+                <a href="#experience" class="hover:text-sky-500 dark:hover:text-sky-400 transition-colors">經驗履歷</a>
+                <a href="#contact" class="hover:text-sky-500 dark:hover:text-sky-400 transition-colors">聯絡方式</a>
+            </nav>
+
+            <!-- Actions (CTA + Mobile Menu Switch) -->
+            <div class="flex items-center gap-3">
+                <a href="#contact" class="hidden sm:inline-flex items-center px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-md hover:shadow-sky-500/25 transition-all">
+                    預約諮詢
+                </a>
+                <button id="mobile-menu-btn" class="md:hidden p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl">
+                    <i class="fa-solid fa-bars text-lg"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Mobile Menu dropdown -->
+        <div id="mobile-menu" class="hidden md:hidden max-w-6xl mx-auto mt-2 p-4 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-800 flex flex-col space-y-3 font-medium text-center">
+            <a href="#home" class="mobile-link py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">首頁</a>
+            <a href="#about" class="mobile-link py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">關於我</a>
+            <a href="#works" class="mobile-link py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">作品與服務</a>
+            <a href="#experience" class="mobile-link py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">經驗履歷</a>
+            <a href="#contact" class="mobile-link py-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">聯絡方式</a>
+        </div>
+    </header>
+
+    <!-- SECTION 1: HERO -->
+    <section id="home" class="min-h-screen pt-32 pb-16 flex items-center justify-center px-4">
+        <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <!-- Left Info -->
+            <div class="space-y-6 text-center lg:text-left">
+                <div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-sky-100 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 text-sky-600 dark:text-sky-400 text-xs font-semibold">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    接單中 / 可承接全棧開發項目
+                </div>
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight leading-tight">
+                    打造高質感與極速的 <span class="bg-gradient-to-r from-sky-500 via-indigo-500 to-purple-500 bg-clip-text text-transparent">數位體驗</span>
+                </h1>
+                <p class="text-base sm:text-lg text-slate-600 dark:text-slate-400 max-w-xl mx-auto lg:mx-0">
+                    你好！我是 Alex，一位專注於 UI/UX 設計與 Front-End 前端開發的工程師。致力於將創新想法轉化為現實體驗。
+                </p>
+                <div class="flex flex-wrap items-center justify-center lg:justify-start gap-4 pt-2">
+                    <a href="#works" class="px-6 py-3 bg-sky-600 hover:bg-sky-500 text-white font-medium rounded-xl shadow-lg shadow-sky-500/25 hover:-translate-y-0.5 transition-all">
+                        瀏覽作品集 <i class="fa-solid fa-arrow-down ml-2 text-xs"></i>
+                    </a>
+                    <a href="#contact" class="px-6 py-3 bg-slate-200 dark:bg-slate-800 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-medium rounded-xl hover:-translate-y-0.5 transition-all">
+                        與我聯絡
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Interactive Graphic Floating Cards -->
+            <div class="relative flex justify-center items-center">
+                <!-- Main Avatar Container -->
+                <div class="relative w-72 h-72 sm:w-80 sm:h-80 rounded-3xl bg-gradient-to-tr from-sky-500 to-indigo-600 p-1.5 shadow-2xl animate-float">
+                    <div class="w-full h-full bg-slate-900 rounded-[22px] overflow-hidden relative flex items-center justify-center">
+                        <img src="https://placehold.co/400x400/0284c7/ffffff?text=Alex+Avatar" alt="Alex Profile" class="w-full h-full object-cover">
+                    </div>
+                </div>
+
+                <!-- Floating Glass Card 1 -->
+                <div class="absolute -top-4 -left-4 sm:left-2 p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/60 dark:border-slate-800/60 shadow-xl flex items-center gap-3 animate-float" style="animation-delay: 1s;">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-bolt"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400">網站性能</div>
+                        <div class="text-sm font-bold text-slate-800 dark:text-slate-100">99.8% 滿分優化</div>
+                    </div>
+                </div>
+
+                <!-- Floating Glass Card 2 -->
+                <div class="absolute -bottom-6 -right-2 sm:right-4 p-4 rounded-2xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border border-slate-200/60 dark:border-slate-800/60 shadow-xl flex items-center gap-3 animate-float" style="animation-delay: 3s;">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <div>
+                        <div class="text-xs text-slate-500 dark:text-slate-400">專案經歷</div>
+                        <div class="text-sm font-bold text-slate-800 dark:text-slate-100">30+ 完成項目</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 2: ABOUT -->
+    <section id="about" class="py-20 px-4 bg-slate-100/50 dark:bg-slate-900/30">
+        <div class="max-w-5xl mx-auto">
+            <div class="text-center space-y-3 mb-12">
+                <h2 class="text-xs uppercase tracking-widest font-semibold text-sky-500">About Me</h2>
+                <h3 class="text-3xl font-bold">熱愛技術，專注極致使用者體驗</h3>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Card 1 -->
+                <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all">
+                    <div class="w-12 h-12 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-code"></i>
+                    </div>
+                    <h4 class="text-lg font-bold mb-2">前端開發</h4>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">精通 HTML5, CSS3, JavaScript, React 及 Tailwind CSS，打造流暢 RWD 響應式頁面。</p>
+                </div>
+                <!-- Card 2 -->
+                <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-compass-drafting"></i>
+                    </div>
+                    <h4 class="text-lg font-bold mb-2">UI/UX 設計</h4>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">注重使用者心理學與視覺階層，使用 Figma 設計美觀且直覺的產品介面原型。</p>
+                </div>
+                <!-- Card 3 -->
+                <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center text-xl mb-4">
+                        <i class="fa-solid fa-rocket"></i>
+                    </div>
+                    <h4 class="text-lg font-bold mb-2">網站SEO與優化</h4>
+                    <p class="text-sm text-slate-600 dark:text-slate-400">注重搜尋引擎優化 (SEO) 及 Web Vitals 加載速度提升，為企業提高轉化率。</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3: WORKS & SERVICES (INTERACTIVE TABS) -->
+    <section id="works" class="py-20 px-4">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center space-y-3 mb-8">
+                <h2 class="text-xs uppercase tracking-widest font-semibold text-sky-500">Portfolio & Services</h2>
+                <h3 class="text-3xl font-bold">精選作品與服務範疇</h3>
+            </div>
+
+            <!-- Tab Switcher -->
+            <div class="flex justify-center mb-10">
+                <div class="inline-flex p-1.5 rounded-2xl bg-slate-200 dark:bg-slate-800">
+                    <button id="tab-projects-btn" class="px-6 py-2.5 rounded-xl font-medium text-sm transition-all bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm">
+                        精選專案 (Projects)
+                    </button>
+                    <button id="tab-services-btn" class="px-6 py-2.5 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100">
+                        服務項目 (Services)
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 1: PROJECTS GRID -->
+            <div id="tab-projects" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- Project 1 -->
+                <div class="group rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-all cursor-pointer" onclick="openModal('極簡智能家居 App 介面', '基於 React 與 Tailwind CSS 打造的智慧家居管理系統，支援多端響應式介面及實時數據顯示。')">
+                    <div class="h-48 overflow-hidden relative">
+                        <img src="https://placehold.co/600x400/0f172a/0284c7?text=Smart+Home+App" alt="Project 1" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-medium text-sm">
+                            點擊查看詳情 <i class="fa-solid fa-arrow-up-right-from-square ml-2"></i>
+                        </div>
+                    </div>
+                    <div class="p-5 space-y-3">
+                        <div class="flex gap-2">
+                            <span class="px-2.5 py-1 rounded-md bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400 text-xs font-semibold">React</span>
+                            <span class="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold">Tailwind</span>
+                        </div>
+                        <h4 class="text-lg font-bold group-hover:text-sky-500 transition-colors">極簡智能家居 App 介面</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">基於 React 與 Tailwind CSS 打造的智慧家居管理系統，支援多端響應式介面。</p>
+                    </div>
+                </div>
+
+                <!-- Project 2 -->
+                <div class="group rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-all cursor-pointer" onclick="openModal('咖啡精品品牌電網', '為在地精品咖啡店量身設計的品牌網站，包含購物車及線上預訂功能。')">
+                    <div class="h-48 overflow-hidden relative">
+                        <img src="https://placehold.co/600x400/1e293b/38bdf8?text=Coffee+E-Commerce" alt="Project 2" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-medium text-sm">
+                            點擊查看詳情 <i class="fa-solid fa-arrow-up-right-from-square ml-2"></i>
+                        </div>
+                    </div>
+                    <div class="p-5 space-y-3">
+                        <div class="flex gap-2">
+                            <span class="px-2.5 py-1 rounded-md bg-amber-100 dark:bg-amber-950 text-amber-600 dark:text-amber-400 text-xs font-semibold">E-Commerce</span>
+                            <span class="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold">JavaScript</span>
+                        </div>
+                        <h4 class="text-lg font-bold group-hover:text-sky-500 transition-colors">咖啡精品品牌電網</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">為在地精品咖啡店量身設計的品牌網站，包含購物車及線上預訂功能。</p>
+                    </div>
+                </div>
+
+                <!-- Project 3 -->
+                <div class="group rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 overflow-hidden hover:shadow-xl transition-all cursor-pointer" onclick="openModal('SaaS 數據分析 Dashboard', '高對比度黑夜模式儀表板，提供多種動態圖表與實時數據監控工具。')">
+                    <div class="h-48 overflow-hidden relative">
+                        <img src="https://placehold.co/600x400/0284c7/ffffff?text=SaaS+Dashboard" alt="Project 3" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        <div class="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white font-medium text-sm">
+                            點擊查看詳情 <i class="fa-solid fa-arrow-up-right-from-square ml-2"></i>
+                        </div>
+                    </div>
+                    <div class="p-5 space-y-3">
+                        <div class="flex gap-2">
+                            <span class="px-2.5 py-1 rounded-md bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 text-xs font-semibold">Dashboard</span>
+                            <span class="px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs font-semibold">Chart.js</span>
+                        </div>
+                        <h4 class="text-lg font-bold group-hover:text-sky-500 transition-colors">SaaS 數據分析 Dashboard</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2">高對比度黑夜模式儀表板，提供多種動態圖表與實時數據監控工具。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB 2: SERVICES CONTENT (HIDDEN BY DEFAULT) -->
+            <div id="tab-services" class="hidden grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+                    <div class="w-12 h-12 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-laptop-code"></i>
+                    </div>
+                    <h4 class="text-xl font-bold">客製化網站開發</h4>
+                    <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">從企業官網、個人作品集到特定功能應用，為你打造全響應式、極速加載且符合品牌形象的優質網站。</p>
+                    <ul class="text-xs text-slate-500 dark:text-slate-400 space-y-2 pt-2">
+                        <li><i class="fa-solid fa-check text-sky-500 mr-2"></i>跨裝置 Responsive 響應式設計</li>
+                        <li><i class="fa-solid fa-check text-sky-500 mr-2"></i>免費託管至 GitHub Pages / Vercel</li>
+                    </ul>
+                </div>
+
+                <div class="p-8 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+                    <div class="w-12 h-12 rounded-xl bg-purple-500/10 text-purple-500 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    </div>
+                    <h4 class="text-xl font-bold">UI/UX 介面優化重構</h4>
+                    <p class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">將舊有體驗不佳的網站徹底改頭換面，提升現代視覺質感，優化使用者流程並增加轉換率。</p>
+                    <ul class="text-xs text-slate-500 dark:text-slate-400 space-y-2 pt-2">
+                        <li><i class="fa-solid fa-check text-purple-500 mr-2"></i>Figma 設計稿繪製</li>
+                        <li><i class="fa-solid fa-check text-purple-500 mr-2"></i>動態互動與無障礙網頁體驗</li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- SECTION 4: EXPERIENCE TIMELINE -->
+    <section id="experience" class="py-20 px-4 bg-slate-100/50 dark:bg-slate-900/30">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center space-y-3 mb-12">
+                <h2 class="text-xs uppercase tracking-widest font-semibold text-sky-500">Experience</h2>
+                <h3 class="text-3xl font-bold">個人經歷與歷程</h3>
+            </div>
+
+            <div class="relative border-l-2 border-slate-200 dark:border-slate-800 ml-4 md:ml-32 space-y-8">
+                <!-- Timeline Item 1 -->
+                <div class="relative pl-6">
+                    <div class="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-sky-500 border-4 border-slate-50 dark:border-slate-950"></div>
+                    <div class="md:absolute md:-left-36 md:top-1 text-xs font-semibold text-slate-400 mb-1 md:mb-0">2023 - 現在</div>
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+                        <h4 class="font-bold text-base">高級前端工程師 (Senior Frontend Dev)</h4>
+                        <p class="text-xs text-sky-500 font-medium">TechVision Ltd.</p>
+                        <p class="text-sm text-slate-600 dark:text-slate-400">主導核心產品線重構，運用 React 與 Tailwind CSS 將頁面加載速度提升 40%。</p>
+                    </div>
+                </div>
+
+                <!-- Timeline Item 2 -->
+                <div class="relative pl-6">
+                    <div class="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-indigo-500 border-4 border-slate-50 dark:border-slate-950"></div>
+                    <div class="md:absolute md:-left-36 md:top-1 text-xs font-semibold text-slate-400 mb-1 md:mb-0">2021 - 2023</div>
+                    <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-2">
+                        <h4 class="font-bold text-base">UI/UX 設計師兼網頁開發者</h4>
+                        <p class="text-xs text-indigo-500 font-medium">Creative Studio</p>
+                        <p class="text-sm text-slate-600 dark:text-slate-400">為超過 15 家中小企業設計並發佈響應式品牌網站。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 5: CONTACT -->
+    <section id="contact" class="py-20 px-4">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center space-y-3 mb-12">
+                <h2 class="text-xs uppercase tracking-widest font-semibold text-sky-500">Contact</h2>
+                <h3 class="text-3xl font-bold">開始合作或隨意交流</h3>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Info Cards -->
+                <div class="space-y-4">
+                    <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-sky-500/10 text-sky-500 flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-regular fa-envelope"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-400">電子郵件</div>
+                            <div class="text-sm font-bold">alex.chen@example.com</div>
+                        </div>
+                    </div>
+
+                    <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center text-xl shrink-0">
+                            <i class="fa-solid fa-location-dot"></i>
+                        </div>
+                        <div>
+                            <div class="text-xs text-slate-400">工作地點</div>
+                            <div class="text-sm font-bold">香港 (Hong Kong) / 支援遠端協作</div>
+                        </div>
+                    </div>
+
+                    <!-- Social Icons -->
+                    <div class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 flex items-center justify-around">
+                        <a href="#" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-sky-500 transition-colors">
+                            <i class="fa-brands fa-github text-lg"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-sky-500 transition-colors">
+                            <i class="fa-brands fa-linkedin text-lg"></i>
+                        </a>
+                        <a href="#" class="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-sky-500 transition-colors">
+                            <i class="fa-brands fa-x-twitter text-lg"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Contact Form -->
+                <form id="contact-form" class="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">你的名字</label>
+                        <input type="text" required placeholder="如: Chan Tai Man" class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">電郵地址</label>
+                        <input type="email" required placeholder="name@example.com" class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">留言內容</label>
+                        <textarea rows="4" required placeholder="請簡單說明你的需求..." class="w-full px-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-sm focus:outline-none focus:ring-2 focus:ring-sky-500"></textarea>
+                    </div>
+                    <button type="submit" id="submit-btn" class="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2">
+                        <span>發送訊息</span>
+                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="py-8 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400">
+        <p>© 2026 Alex Chen. Built with HTML, Tailwind CSS & JavaScript. Fully Hosted on GitHub Pages.</p>
+    </footer>
+
+    <!-- Theme Toggle Floating Button -->
+    <button id="theme-toggle" class="fixed bottom-6 right-6 w-12 h-12 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl flex items-center justify-center text-slate-700 dark:text-slate-200 hover:scale-110 transition-all z-50">
+        <i id="theme-icon" class="fa-solid fa-moon text-lg"></i>
+    </button>
+
+    <!-- Modal Box for Project Preview -->
+    <div id="project-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-w-lg w-full rounded-2xl p-6 shadow-2xl space-y-4 animate-float" style="animation-duration: 0.3s;">
+            <div class="flex justify-between items-center">
+                <h3 id="modal-title" class="text-xl font-bold">專案名稱</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1">
+                    <i class="fa-solid fa-xmark text-xl"></i>
+                </button>
+            </div>
+            <p id="modal-desc" class="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">專案詳細說明描述內容。</p>
+            <div class="pt-4 flex justify-end gap-3">
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold">關閉</button>
+                <a href="#" onclick="alert('提示：這是一個示範 Modal 彈窗！'); closeModal();" class="px-4 py-2 bg-sky-600 text-white rounded-xl text-xs font-semibold hover:bg-sky-500">開啟線上預覽</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Interactions -->
+    <script>
+        // 1. Mobile Menu Toggle
+        const mobileBtn = document.getElementById('mobile-menu-btn');
+        const mobileMenu = document.getElementById('mobile-menu');
+        const mobileLinks = document.querySelectorAll('.mobile-link');
+
+        mobileBtn.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+
+        mobileLinks.forEach(link => {
+            link.addEventListener('click', () => mobileMenu.classList.add('hidden'));
+        });
+
+        // 2. Interactive Tabs Switcher
+        const btnProjects = document.getElementById('tab-projects-btn');
+        const btnServices = document.getElementById('tab-services-btn');
+        const tabProjects = document.getElementById('tab-projects');
+        const tabServices = document.getElementById('tab-services');
+
+        btnProjects.addEventListener('click', () => {
+            tabProjects.classList.remove('hidden');
+            tabServices.classList.add('hidden');
+            btnProjects.className = "px-6 py-2.5 rounded-xl font-medium text-sm transition-all bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm";
+            btnServices.className = "px-6 py-2.5 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100";
+        });
+
+        btnServices.addEventListener('click', () => {
+            tabServices.classList.remove('hidden');
+            tabProjects.classList.add('hidden');
+            btnServices.className = "px-6 py-2.5 rounded-xl font-medium text-sm transition-all bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 shadow-sm";
+            btnProjects.className = "px-6 py-2.5 rounded-xl font-medium text-sm transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100";
+        });
+
+        // 3. Dark / Light Mode Toggle
+        const themeBtn = document.getElementById('theme-toggle');
+        const themeIcon = document.getElementById('theme-icon');
+        
+        themeBtn.addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+            if (document.documentElement.classList.contains('dark')) {
+                themeIcon.className = 'fa-solid fa-sun text-lg text-amber-400';
+            } else {
+                themeIcon.className = 'fa-solid fa-moon text-lg text-slate-700';
+            }
+        });
+
+        // Initialize sun icon for default dark theme
+        if (document.documentElement.classList.contains('dark')) {
+            themeIcon.className = 'fa-solid fa-sun text-lg text-amber-400';
+        }
+
+        // 4. Modal Functions
+        function openModal(title, desc) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('project-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('project-modal').classList.add('hidden');
+        }
+
+        // 5. Contact Form Interactive Submit Animation
+        const contactForm = document.getElementById('contact-form');
+        const submitBtn = document.getElementById('submit-btn');
+
+        contactForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> 發送中...`;
+
+            setTimeout(() => {
+                submitBtn.className = "w-full py-3 bg-emerald-600 text-white font-semibold text-sm rounded-xl transition-all flex items-center justify-center gap-2";
+                submitBtn.innerHTML = `<i class="fa-solid fa-check"></i> 訊息已成功發送！`;
+                contactForm.reset();
+
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.className = "w-full py-3 bg-sky-600 hover:bg-sky-500 text-white font-semibold text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2";
+                    submitBtn.innerHTML = `<span>發送訊息</span><i class="fa-solid fa-paper-plane text-xs"></i>`;
+                }, 3000);
+            }, 1500);
+        });
+    </script>
 </body>
 </html>
