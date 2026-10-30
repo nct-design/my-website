@@ -131,7 +131,6 @@
                 newDate: newDate
             };
 
-            // 這裡使用標準 fetch 來接收後台回傳的詳細文字報告
             fetch(GAS_WEB_APP_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -142,12 +141,18 @@
                 if (data.status === "success") {
                     msgBox.innerHTML = data.message;
                     if (actionType === 'preview') {
-                        // 預覽成功後，顯示「正式執行」按鈕，讓用戶可以點擊確認
                         document.getElementById('execBtn').style.display = "block";
                     } else {
-                        // 正式執行後，隱藏執行按鈕，提示完成
+                        // 正式執行完成後：
+                        // 1. 隱藏執行按鈕
                         document.getElementById('execBtn').style.display = "none";
-                        msgBox.innerHTML += "\n\n🎉 試算表更新已全部完成！";
+                        // 2. 清空產品代號及現貨數量輸入框
+                        document.getElementById('itemCode').value = "";
+                        document.getElementById('stock').value = "";
+                        // 3. 將游標自動跳回「產品代號」輸入框
+                        document.getElementById('itemCode').focus();
+                        
+                        msgBox.innerHTML += "\n\n🎉 試算表更新已完成，輸入框已重設！";
                     }
                 } else {
                     msgBox.innerHTML = "❌ 發生錯誤：" + data.message;
