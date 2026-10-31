@@ -36,6 +36,7 @@
         /* 歷史紀錄卡片樣式 */
         .history-card { background: #fff; border: 1px solid #e1e4e8; border-left: 4px solid #1890ff; padding: 12px; margin-bottom: 10px; border-radius: 6px; font-size: 0.9rem; }
         .history-header { font-weight: bold; color: #333; margin-bottom: 6px; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+        .history-details { margin-top: 6px; background: #f8f9fa; padding: 8px; border-radius: 4px; font-size: 0.85rem; color: #444; line-height: 1.4; }
 
         /* 左下角固定版本標籤 */
         .version-badge { position: fixed; bottom: 10px; left: 15px; font-size: 0.75rem; color: #888; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px; border: 1px solid #e1e4e8; pointer-events: none; }
@@ -102,8 +103,7 @@
         const ADMIN_PWD = "123"; // 記得改成你的密碼
         const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyy0LGBNmmp8R94PzuGJbj8lyzZhkVIoClsUZ4o53kOVkLmNoc9dEL09gYmqTmVJVe82Q/exec";
 
-        let lastExecutedPayload = null; // 記錄最近一次執行的配貨內容
-        let historyList = [];           // 歷史紀錄陣列
+        let historyList = []; // 歷史紀錄陣列
 
         function handleAuthKey(e) {
             if (e.key === 'Enter') checkPassword();
@@ -132,12 +132,8 @@
         }
 
         function formatMessageWithStyles(rawText) {
-            // 將單號加大加粗 (例如: 🔖 訂單編號: A1024 -> 放大顯示)
             let formatted = rawText.replace(/(🔖 訂單[編號]*:\s*[A-Za-z0-9_-]+)/g, '<span style="font-size:1.2rem; font-weight:bold; color:#0066cc;">$1</span>');
-            
-            // 數量 > 1 加入特大紅色突出標示 (例如: 數量: 2件 -> 特大紅字)
             formatted = formatted.replace(/(數量:\s*([2-9]|\d{2,})\s*件)/g, '<span class="qty-badge-large">🔥 $1</span>');
-            
             return formatted;
         }
 
@@ -182,16 +178,14 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === "success") {
-                    // 套用樣式增強（單號放大、大數量加紅框）
                     msgBox.innerHTML = formatMessageWithStyles(data.message);
                     
                     if (actionType === 'preview') {
                         document.getElementById('execBtn').style.display = "block";
-                        lastExecutedPayload = payload;
                     } else {
                         document.getElementById('execBtn').style.display = "none";
                         
-                        // 正式執行成功後，加入右側歷史紀錄 (保留 3 組)
+                        // 正式執行成功後，解析回傳的單號與詳細資料加入右側歷史紀錄
                         addHistoryRecord(itemCode, stock, data.message);
 
                         // 重設輸入框
@@ -214,15 +208,30 @@
             let now = new Date();
             let timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
             
-            // 從 Apps Script 回傳的文字中擷取訂單編號
-            let orderMatches = rawMessage.match(/🔖 訂單[編號]*:\s*([A-Za-z0-9_-]+)/g) || [];
-            let ordersStr = orderMatches.map(m => m.replace(/🔖 訂單[編號]*:\s*/, '')).join(', ') || "已更新配貨狀態";
+            // 從 Apps Script 回傳的訊息中精確擷取每一行獲分配的單號與明細
+            // 預期格式如: " - 訂單 A1024 (陳大文, 訂 2件)" 或類似
+            let lines = rawMessage.split('\n');
+            let allocatedDetails = [];
+            let capture = false;
+
+            for (let line of lines) {
+                if (line.includes("將獲分配的訂單")) {
+                    capture = true;
+                    continue;
+                }
+                if (line.includes("因庫存不足") || line.includes("剩餘現貨量")) {
+                    capture = false;
+                }
+                if (capture && line.trim().startsWith("-")) {
+                    allocatedDetails.push(line.trim());
+                }
+            }
 
             historyList.unshift({
                 time: timeStr,
                 itemCode: itemCode,
                 stock: stock,
-                details: ordersStr
+                details: allocatedDetails.length > 0 ? allocatedDetails : ["無具體單號明細"]
             });
 
             if (historyList.length > 3) {
@@ -241,14 +250,15 @@
 
             let html = "";
             historyList.forEach((h, index) => {
+                let detailsHtml = h.details.map(d => `<div style="margin-bottom: 2px;">${d}</div>`).join('');
                 html += `
                     <div class="history-card">
                         <div class="history-header">
-                            <span>#${index+1} 代號: ${h.itemCode} (派出 ${h.stock} 件)</span>
+                            <span style="color: #0066cc;">#${index+1} 產品: ${h.itemCode} (派 ${h.stock} 件)</span>
                             <span style="font-size: 0.75rem; color: #888;">${h.time}</span>
                         </div>
-                        <div style="color: #555; font-size: 0.85rem; word-break: break-all;">
-                            涉及單號: ${h.details}
+                        <div class="history-details">
+                            ${detailsHtml}
                         </div>
                     </div>
                 `;
