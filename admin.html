@@ -7,7 +7,7 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: #f0f2f5; color: #333; padding: 20px; position: relative; min-height: 100vh; padding-bottom: 50px; }
-        .container { max-width: 500px; margin: 0 auto; }
+        .container { max-width: 950px; margin: 0 auto; }
         h1 { text-align: center; color: #d9363e; margin-bottom: 20px; }
         
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
@@ -21,12 +21,23 @@
         .btn-execute { background: #52c41a; color: white; border: none; cursor: pointer; font-weight: bold; display: none; }
         .btn-execute:hover { background: #389e0d; }
 
-        .msg { margin-top: 15px; padding: 12px; border-radius: 6px; text-align: left; font-size: 0.9rem; font-weight: bold; display: none; line-height: 1.5; white-space: pre-line; background: #fafafa; border: 1px solid #d9d9d9; color: #333; }
+        .msg { margin-top: 15px; padding: 12px; border-radius: 6px; text-align: left; font-size: 0.95rem; font-weight: bold; display: none; line-height: 1.6; white-space: pre-line; background: #fafafa; border: 1px solid #d9d9d9; color: #333; }
 
-        #authScreen { text-align: center; }
+        #authScreen { max-width: 450px; margin: 0 auto; text-align: center; }
         #adminPanel { display: none; }
 
-        /* 左下角版本時間標籤 */
+        /* 雙欄佈局：左邊操作，右邊歷史紀錄 */
+        .workspace { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 768px) { .workspace { grid-template-columns: 1fr; } }
+
+        /* 數量大於 1 的醒目紅字標籤 */
+        .qty-badge-large { background: #fff1f0; color: #cf1322; border: 2px solid #ff4d4f; font-weight: bold; padding: 2px 8px; border-radius: 6px; font-size: 1.15rem; display: inline-block; margin-left: 5px; }
+
+        /* 歷史紀錄卡片樣式 */
+        .history-card { background: #fff; border: 1px solid #e1e4e8; border-left: 4px solid #1890ff; padding: 12px; margin-bottom: 10px; border-radius: 6px; font-size: 0.9rem; }
+        .history-header { font-weight: bold; color: #333; margin-bottom: 6px; display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+
+        /* 左下角固定版本標籤 */
         .version-badge { position: fixed; bottom: 10px; left: 15px; font-size: 0.75rem; color: #888; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px; border: 1px solid #e1e4e8; pointer-events: none; }
     </style>
 </head>
@@ -35,6 +46,7 @@
     <div class="container">
         <h1>🔐 管理員安全驗證</h1>
 
+        <!-- 1. 登入畫面 -->
         <div class="card" id="authScreen">
             <label for="adminPassword">請輸入管理員密碼：</label>
             <input type="password" id="adminPassword" placeholder="輸入密碼" onkeypress="handleAuthKey(event)">
@@ -42,55 +54,56 @@
             <div id="authMsg" style="display:none; margin-top:10px; color: #ff4d4f; font-weight:bold;">密碼錯誤！</div>
         </div>
 
+        <!-- 2. 後台控制面板 -->
         <div id="adminPanel">
-            <div class="card">
-                <h2 style="font-size: 1.2rem; margin-bottom: 15px; color: #333;">📦 智能批次配貨系統</h2>
-                
-                <label for="itemCode">產品代號：</label>
-                <input type="text" id="itemCode" placeholder="例如: 0001" onkeypress="handleFormKey(event, 'stock')">
+            <div class="workspace">
+                <!-- 左欄：配貨操作區 -->
+                <div class="card">
+                    <h2 style="font-size: 1.2rem; margin-bottom: 15px; color: #333;">📦 智能批次配貨系統</h2>
+                    
+                    <label for="itemCode">產品代號：</label>
+                    <input type="text" id="itemCode" placeholder="例如: 0001" onkeypress="handleFormKey(event, 'stock')">
 
-                <label for="stock">現貨總數量（我有幾多件現貨可以派）：</label>
-                <input type="number" id="stock" placeholder="例如: 10" onkeypress="handleFormKey(event, 'preview')">
+                    <label for="stock">現貨總數量（我有幾多件現貨可以派）：</label>
+                    <input type="number" id="stock" placeholder="例如: 10" onkeypress="handleFormKey(event, 'preview')">
 
-                <label for="newStatus">設定新狀態：</label>
-                <select id="newStatus">
-                    <option value="已到貨(可到店取)">已到貨(可到店取)</option>
-                    <option value="在訂中">在訂中</option>
-                    <option value="已完成">已完成</option>
-                </select>
+                    <label for="newStatus">設定新狀態：</label>
+                    <select id="newStatus">
+                        <option value="已到貨(可到店取)">已到貨(可到店取)</option>
+                        <option value="在訂中">在訂中</option>
+                        <option value="已完成">已完成</option>
+                    </select>
 
-                <label for="newDate">更新日期：</label>
-                <input type="text" id="newDate" placeholder="留空則自動填寫今日">
+                    <label for="newDate">更新日期：</label>
+                    <input type="text" id="newDate" placeholder="留空則自動填寫今日">
 
-                <!-- 雙按鈕設計 -->
-                <button class="btn-preview" onclick="runAllocation('preview')">🔍 1. 先預覽配貨結果</button>
-                <button id="execBtn" class="btn-execute" onclick="runAllocation('execute')">🚀 2. 確認無誤，正式執行配貨</button>
+                    <!-- 雙按鈕設計 -->
+                    <button class="btn-preview" onclick="runAllocation('preview')">🔍 1. 先預覽配貨結果</button>
+                    <button id="execBtn" class="btn-execute" onclick="runAllocation('execute')">🚀 2. 確認無誤，正式執行配貨</button>
 
-                <div id="responseMsg" class="msg"></div>
+                    <div id="responseMsg" class="msg"></div>
+                </div>
+
+                <!-- 右欄：最近配貨歷史紀錄 (保留 3 組) -->
+                <div class="card" style="background: #fafbfc;">
+                    <h3 style="font-size: 1.1rem; margin-bottom: 15px; color: #333;">🕒 最近配貨歷史紀錄 (保留 3 組)</h3>
+                    <div id="historyArea">
+                        <p style="color: #888; font-size: 0.9rem; text-align: center; margin-top: 20px;">暫無近期歷史紀錄</p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- 左下角版本時間戳 -->
-    <div id="versionBadge" class="version-badge">Ver: 載入中...</div>
+    <!-- 左下角固定版本時間標籤 -->
+    <div class="version-badge">Ver: 20261031-001</div>
 
     <script>
-        // 自動生成左下角版本時間戳 (例如: 202610310148)
-        function initVersionTimestamp() {
-            let now = new Date();
-            let yyyy = now.getFullYear();
-            let mm = String(now.getMonth() + 1).padStart(2, '0');
-            let dd = String(now.getDate()).padStart(2, '0');
-            let hh = String(now.getHours()).padStart(2, '0');
-            let min = String(now.getMinutes()).padStart(2, '0');
-            
-            let versionStr = `${yyyy}${mm}${dd}${hh}${min}`;
-            document.getElementById('versionBadge').innerText = `Ver: ${versionStr}`;
-        }
-        initVersionTimestamp();
-
         const ADMIN_PWD = "123"; // 記得改成你的密碼
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyy0LGBNmmp8R94PzuGJbj8lyzZhkVIoClsUZ4o53kOVkLmNoc9dEL09gYmqTmVJVe82Q/exec"; // 記得換網址
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyy0LGBNmmp8R94PzuGJbj8lyzZhkVIoClsUZ4o53kOVkLmNoc9dEL09gYmqTmVJVe82Q/exec";
+
+        let lastExecutedPayload = null; // 記錄最近一次執行的配貨內容
+        let historyList = [];           // 歷史紀錄陣列
 
         function handleAuthKey(e) {
             if (e.key === 'Enter') checkPassword();
@@ -116,6 +129,16 @@
             } else {
                 document.getElementById('authMsg').style.display = 'block';
             }
+        }
+
+        function formatMessageWithStyles(rawText) {
+            // 將單號加大加粗 (例如: 🔖 訂單編號: A1024 -> 放大顯示)
+            let formatted = rawText.replace(/(🔖 訂單[編號]*:\s*[A-Za-z0-9_-]+)/g, '<span style="font-size:1.2rem; font-weight:bold; color:#0066cc;">$1</span>');
+            
+            // 數量 > 1 加入特大紅色突出標示 (例如: 數量: 2件 -> 特大紅字)
+            formatted = formatted.replace(/(數量:\s*([2-9]|\d{2,})\s*件)/g, '<span class="qty-badge-large">🔥 $1</span>');
+            
+            return formatted;
         }
 
         function runAllocation(actionType) {
@@ -159,11 +182,19 @@
             .then(response => response.json())
             .then(data => {
                 if (data.status === "success") {
-                    msgBox.innerHTML = data.message;
+                    // 套用樣式增強（單號放大、大數量加紅框）
+                    msgBox.innerHTML = formatMessageWithStyles(data.message);
+                    
                     if (actionType === 'preview') {
                         document.getElementById('execBtn').style.display = "block";
+                        lastExecutedPayload = payload;
                     } else {
                         document.getElementById('execBtn').style.display = "none";
+                        
+                        // 正式執行成功後，加入右側歷史紀錄 (保留 3 組)
+                        addHistoryRecord(itemCode, stock, data.message);
+
+                        // 重設輸入框
                         document.getElementById('itemCode').value = "";
                         document.getElementById('stock').value = "";
                         document.getElementById('itemCode').focus();
@@ -177,6 +208,52 @@
             .catch(error => {
                 msgBox.innerHTML = "❌ 連線失敗：" + error;
             });
+        }
+
+        function addHistoryRecord(itemCode, stock, rawMessage) {
+            let now = new Date();
+            let timeStr = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+            
+            // 從 Apps Script 回傳的文字中擷取訂單編號
+            let orderMatches = rawMessage.match(/🔖 訂單[編號]*:\s*([A-Za-z0-9_-]+)/g) || [];
+            let ordersStr = orderMatches.map(m => m.replace(/🔖 訂單[編號]*:\s*/, '')).join(', ') || "已更新配貨狀態";
+
+            historyList.unshift({
+                time: timeStr,
+                itemCode: itemCode,
+                stock: stock,
+                details: ordersStr
+            });
+
+            if (historyList.length > 3) {
+                historyList.pop(); // 超過 3 組刪除最舊的
+            }
+
+            renderHistory();
+        }
+
+        function renderHistory() {
+            let historyArea = document.getElementById('historyArea');
+            if (historyList.length === 0) {
+                historyArea.innerHTML = `<p style="color: #888; font-size: 0.9rem; text-align: center; margin-top: 20px;">暫無近期歷史紀錄</p>`;
+                return;
+            }
+
+            let html = "";
+            historyList.forEach((h, index) => {
+                html += `
+                    <div class="history-card">
+                        <div class="history-header">
+                            <span>#${index+1} 代號: ${h.itemCode} (派出 ${h.stock} 件)</span>
+                            <span style="font-size: 0.75rem; color: #888;">${h.time}</span>
+                        </div>
+                        <div style="color: #555; font-size: 0.85rem; word-break: break-all;">
+                            涉及單號: ${h.details}
+                        </div>
+                    </div>
+                `;
+            });
+            historyArea.innerHTML = html;
         }
     </script>
 </body>
