@@ -37,7 +37,7 @@
         
         .error-msg { color: #ff4d4f; font-weight: bold; text-align: center; margin-top: 10px; }
 
-        /* 左下角版本時間標籤 */
+        /* 左下角固定版本時間標籤 */
         .version-badge { position: fixed; bottom: 10px; left: 15px; font-size: 0.75rem; color: #888; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px; border: 1px solid #e1e4e8; pointer-events: none; }
     </style>
 </head>
@@ -47,10 +47,10 @@
         <h1>📦 客戶訂單查詢</h1>
 
         <div class="card">
-            <label for="phoneInput">聯絡電話：</label>
-            <input type="text" id="phoneInput" placeholder="例如: 91234567" onkeypress="handleKey(event, 'orderSuffixInput')">
+            <label for="phoneInput">聯絡電話（支援全組或最後 4 位）：</label>
+            <input type="text" id="phoneInput" placeholder="例如: 91234567 或 4567" onkeypress="handleKey(event, 'orderSuffixInput')">
 
-            <label for="orderSuffixInput">訂單編號最後 4 位數字：</label>
+            <label for="orderSuffixInput">任一訂單編號最後 4 位數字：</label>
             <input type="text" id="orderSuffixInput" placeholder="例如: 1024" onkeypress="handleKey(event, 'search')">
 
             <button onclick="searchOrders()">立即安全查詢</button>
@@ -58,26 +58,12 @@
         </div>
     </div>
 
-    <!-- 左下角版本時間戳 -->
-    <div id="versionBadge" class="version-badge">Ver: 載入中...</div>
+    <!-- 左下角固定版本時間戳 -->
+    <div class="version-badge">Ver: 20261031-001</div>
 
     <!-- 引入 PapaParse 套件 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script>
-        // 初始化左下角版本時間戳（僅在頁面載入時執行一次，不跳動）
-        function initVersionTimestamp() {
-            let now = new Date();
-            let yyyy = now.getFullYear();
-            let mm = String(now.getMonth() + 1).padStart(2, '0');
-            let dd = String(now.getDate()).padStart(2, '0');
-            let hh = String(now.getHours()).padStart(2, '0');
-            let min = String(now.getMinutes()).padStart(2, '0');
-            
-            let versionStr = `${yyyy}${mm}${dd}${hh}${min}`;
-            document.getElementById('versionBadge').innerText = `Ver: ${versionStr}`;
-        }
-        initVersionTimestamp();
-
         // 支援 Enter 鍵跳行或觸發查詢
         function handleKey(e, nextId) {
             if (e.key === 'Enter') {
@@ -94,16 +80,16 @@
         const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRADaT7B1mQiXOsnvT-IKmaal4NFWLY4krk_gDN-UZ0AFvhyq_-OAexLNN9JW2EXwoxis2GXQc2Bt4u/pub?gid=0&single=true&output=csv";
 
         function searchOrders() {
-            let phone = document.getElementById('phoneInput').value.trim();
+            let phoneInput = document.getElementById('phoneInput').value.trim();
             let orderSuffix = document.getElementById('orderSuffixInput').value.trim();
             let resultArea = document.getElementById('resultArea');
 
-            if (phone === "" || orderSuffix === "") {
-                resultArea.innerHTML = `<p class="error-msg">請完整填寫電話號碼及訂單最後 4 位數字！</p>`;
+            if (phoneInput === "" || orderSuffix === "") {
+                resultArea.innerHTML = `<p class="error-msg">請完整填寫電話及訂單最後 4 位數字！</p>`;
                 return;
             }
 
-            resultArea.innerHTML = `<p style="text-align:center; color:#666; margin-top:10px;">安全查詢中，請稍候...</p>`;
+            resultArea.innerHTML = `<p style="text-align:center; color:#666; margin-top:10px;">安全驗證中，請稍候...</p>`;
 
             Papa.parse(SHEET_CSV_URL, {
                 download: true,
@@ -111,23 +97,35 @@
                 complete: function(results) {
                     let data = results.data;
 
-                    let matchedRows = data.filter(row => {
+                    // 1. 篩選電話：支援「輸入全組電話」或「只輸入尾 4 位」
+                    let userRows = data.filter(row => {
                         let rowPhone = (row["電話 (Key)"] || row["電話"] || "").trim();
-                        let rowOrderId = (row["訂單編號"] || "").trim();
+                        if (!rowPhone) return false;
 
-                        let phoneMatch = (rowPhone === phone);
-                        let suffixMatch = rowOrderId.endsWith(orderSuffix) || rowOrderId.includes(orderSuffix);
-
-                        return phoneMatch && suffixMatch;
+                        if (phoneInput.length <= 4) {
+                            // 如果用戶輸入 4 位或以下，比對資料庫電話的尾 4 位
+                            return rowPhone.endsWith(phoneInput);
+                        } else {
+                            // 如果用戶輸入超過 4 位（例如全組電話），比對是否包含或吻合
+                            return rowPhone.includes(phoneInput);
+                        }
                     });
 
-                    if (matchedRows.length === 0) {
-                        resultArea.innerHTML = `<p class="error-msg">搵唔到符合嘅記錄，請確認電話同訂單編號後 4 位是否正確。</p>`;
+                    // 2. 檢查該電話名下，是否有「任意一張單」符合輸入的訂單尾數 4 位
+                    let hasValidAuth = userRows.some(row => {
+                        let rowOrderId = (row["訂單編號"] || "").trim();
+                        return rowOrderId.endsWith(orderSuffix) || rowOrderId.includes(orderSuffix);
+                    });
+
+                    // 3. 驗證失敗
+                    if (userRows.length === 0 || !hasValidAuth) {
+                        resultArea.innerHTML = `<p class="error-msg">搵唔到符合嘅記錄，請確認輸入嘅電話同訂單編號是否正確。</p>`;
                         return;
                     }
 
+                    // 4. 驗證通過！將該電話名下的「所有訂單」打包顯示出來
                     let ordersMap = {};
-                    matchedRows.forEach(row => {
+                    userRows.forEach(row => {
                         let orderId = row["訂單編號"] || "未分類訂單";
                         let customerName = row["客戶姓名"] || "";
                         let itemCode = row["產品代號"] || "";
@@ -153,7 +151,7 @@
                         }
                     });
 
-                    let html = `<h3 style="margin: 15px 0 10px 0; font-size:1.1rem; color:#444; text-align:left;">為你找到以下訂單：</h3>`;
+                    let html = `<h3 style="margin: 15px 0 10px 0; font-size:1.1rem; color:#444; text-align:left;">為你找到以下名下所有訂單：</h3>`;
                     
                     for (let orderId in ordersMap) {
                         let ord = ordersMap[orderId];
