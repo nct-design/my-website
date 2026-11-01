@@ -3,12 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>客戶訂單查詢系統</title>
+    <title>門巿訂書服務查詢</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
-        body { background-color: #f0f2f5; color: #333; padding: 20px; position: relative; min-height: 100vh; padding-bottom: 50px; }
+        body { background-color: #f0f2f5; color: #333; padding: 20px; position: relative; min-height: 100vh; padding-bottom: 70px; }
         .container { max-width: 600px; margin: 0 auto; }
-        h1 { text-align: center; color: #0066cc; margin-bottom: 20px; }
+        
+        .header-box { text-align: center; margin-bottom: 20px; }
+        h1 { color: #0066cc; margin-bottom: 6px; font-size: 1.5rem; }
+        .subtitle { color: #666; font-size: 0.95rem; }
         
         .card { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 20px; }
         
@@ -22,13 +25,11 @@
         .order-header { border-bottom: 1px solid #eee; padding-bottom: 8px; margin-bottom: 10px; }
         .order-id { font-weight: bold; color: #333; font-size: 1.05rem; }
         
-        /* 產品清單行樣式 */
         .order-items { list-style: none; margin-top: 8px; }
         .item-row { display: flex; justify-content: space-between; align-items: flex-start; padding: 10px; background: #f9f9f9; border-radius: 6px; margin-bottom: 8px; font-size: 0.95rem; gap: 10px; }
         .item-left { flex-grow: 1; }
         .item-name { color: #333; font-weight: 500; display: block; margin-bottom: 3px; }
         
-        /* 數量標籤樣式 */
         .item-qty { background: #e6f7ff; color: #1890ff; border: 1px solid #91d5ff; font-weight: bold; font-size: 0.8rem; padding: 1px 6px; border-radius: 4px; margin-left: 5px; }
 
         .item-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; white-space: nowrap; }
@@ -37,137 +38,114 @@
         
         .error-msg { color: #ff4d4f; font-weight: bold; text-align: center; margin-top: 10px; }
 
-        /* 左下角固定版本時間標籤 */
-        .version-badge { position: fixed; bottom: 10px; left: 15px; font-size: 0.75rem; color: #888; background: rgba(255,255,255,0.8); padding: 4px 8px; border-radius: 4px; border: 1px solid #e1e4e8; pointer-events: none; }
+        .footer-info { text-align: center; font-size: 0.85rem; color: #666; margin-top: 25px; line-height: 1.6; background: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e1e4e8; }
+        .footer-info a { color: #0066cc; text-decoration: none; font-weight: bold; }
+
+        .version-badge { position: fixed; bottom: 5px; left: 10px; font-size: 0.7rem; color: #aaa; background: rgba(255,255,255,0.9); padding: 2px 6px; border-radius: 4px; border: 1px solid #eee; pointer-events: none; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>📦 客戶訂單查詢</h1>
+        <div class="header-box">
+            <h1>📖 門巿訂書服務查詢</h1>
+            <p class="subtitle">即時查詢您的課本到貨狀況</p>
+        </div>
 
         <div class="card">
-            <label for="phoneInput">聯絡電話（支援全組或最後 4 位）：</label>
-            <input type="text" id="phoneInput" placeholder="例如: 91234567 或 4567" onkeypress="handleKey(event, 'orderSuffixInput')">
-
-            <label for="orderSuffixInput">任一訂單編號最後 4 位數字：</label>
-            <input type="text" id="orderSuffixInput" placeholder="例如: 1024" onkeypress="handleKey(event, 'search')">
+            <label for="phoneInput">聯絡電話（全組電話）：</label>
+            <input type="text" id="phoneInput" placeholder="例如: 91234567" onkeypress="handleKey(event, 'search')">
 
             <button onclick="searchOrders()">立即安全查詢</button>
             <div id="resultArea"></div>
         </div>
+
+        <!-- 溫馨提示與聯絡資訊 -->
+        <div class="footer-info">
+            <p>如有任何查詢，歡迎 WhatsApp 聯絡：<a href="https://wa.me/85266667788" target="_blank">6666 7788</a> 或親臨門巿。</p>
+            <p>到貨後我們會盡快更新狀態，謝謝您的耐心等候！</p>
+        </div>
     </div>
 
-    <!-- 左下角固定版本時間戳 -->
-    <div class="version-badge">Ver: 20261031-001</div>
+    <div class="version-badge">Ver: 20261031-003-exec</div>
 
-    <!-- 引入 PapaParse 套件 -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <script>
-        // 支援 Enter 鍵跳行或觸發查詢
-        function handleKey(e, nextId) {
+        // 支援 Enter 鍵觸發查詢
+        function handleKey(e, action) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                if (nextId === 'search') {
-                    searchOrders();
-                } else {
-                    document.getElementById(nextId).focus();
-                }
+                searchOrders();
             }
         }
 
-        // Google 試算表發布的 CSV 網址
-        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRADaT7B1mQiXOsnvT-IKmaal4NFWLY4krk_gDN-UZ0AFvhyq_-OAexLNN9JW2EXwoxis2GXQc2Bt4u/pub?gid=0&single=true&output=csv";
+        // 🌐 請在此處填入你 Google Apps Script 部署取得的 /exec 網頁應用程式 URL
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwT8f6alN0YaSgyc6Z_qtYevwILjyYJVaP6Y3BPV3TlSkicV17GNcgpF-F9WIXeojPfBQ/exec";
 
-        function searchOrders() {
+        async function searchOrders() {
             let phoneInput = document.getElementById('phoneInput').value.trim();
-            let orderSuffix = document.getElementById('orderSuffixInput').value.trim();
             let resultArea = document.getElementById('resultArea');
 
-            if (phoneInput === "" || orderSuffix === "") {
-                resultArea.innerHTML = `<p class="error-msg">請完整填寫電話及訂單最後 4 位數字！</p>`;
+            if (phoneInput === "") {
+                resultArea.innerHTML = `<p class="error-msg">請完整填寫登記的聯絡電話！</p>`;
+                return;
+            }
+
+            if (GAS_WEB_APP_URL === "YOUR_GAS_WEB_APP_URL") {
+                resultArea.innerHTML = `<p class="error-msg">系統尚未設定 GAS API 網址，請先在程式碼中填入 /exec 網址。</p>`;
                 return;
             }
 
             resultArea.innerHTML = `<p style="text-align:center; color:#666; margin-top:10px;">安全驗證中，請稍候...</p>`;
 
-            Papa.parse(SHEET_CSV_URL, {
-                download: true,
-                header: true,
-                complete: function(results) {
-                    let data = results.data;
+            try {
+                // 呼叫 GAS 後端的 doGet(e)，帶入 phone 參數
+                let response = await fetch(`${GAS_WEB_APP_URL}?phone=${encodeURIComponent(phoneInput)}`);
+                let result = await response.json();
 
-                    // 1. 篩選電話：支援「輸入全組電話」或「只輸入尾 4 位」
-                    let userRows = data.filter(row => {
-                        let rowPhone = (row["電話 (Key)"] || row["電話"] || "").trim();
-                        if (!rowPhone) return false;
+                if (result.status === "success") {
+                    let orders = result.data;
 
-                        if (phoneInput.length <= 4) {
-                            // 如果用戶輸入 4 位或以下，比對資料庫電話的尾 4 位
-                            return rowPhone.endsWith(phoneInput);
-                        } else {
-                            // 如果用戶輸入超過 4 位（例如全組電話），比對是否包含或吻合
-                            return rowPhone.includes(phoneInput);
-                        }
-                    });
-
-                    // 2. 檢查該電話名下，是否有「任意一張單」符合輸入的訂單尾數 4 位
-                    let hasValidAuth = userRows.some(row => {
-                        let rowOrderId = (row["訂單編號"] || "").trim();
-                        return rowOrderId.endsWith(orderSuffix) || rowOrderId.includes(orderSuffix);
-                    });
-
-                    // 3. 驗證失敗
-                    if (userRows.length === 0 || !hasValidAuth) {
-                        resultArea.innerHTML = `<p class="error-msg">搵唔到符合嘅記錄，請確認輸入嘅電話同訂單編號是否正確。</p>`;
+                    if (!orders || orders.length === 0) {
+                        resultArea.innerHTML = `<p class="error-msg">搵唔到符合呢個電話嘅記錄，請確認電話號碼是否正確。</p>`;
                         return;
                     }
 
-                    // 4. 驗證通過！將該電話名下的「所有訂單」打包顯示出來
+                    // 將回傳的訂單依照單號 (orderId) 分組顯示
                     let ordersMap = {};
-                    userRows.forEach(row => {
-                        let orderId = row["訂單編號"] || "未分類訂單";
-                        let customerName = row["客戶姓名"] || "";
-                        let itemCode = row["產品代號"] || "";
-                        let itemName = row["產品名稱"] || "";
-                        let itemQty = row["數量訂單"] || row["數量"] || "1";
-                        let itemStatus = row["訂單狀態"] || row["狀態"] || "處理中";
-                        let updateDate = row["更新日期"] || "";
-
+                    orders.forEach(item => {
+                        let orderId = item.orderId || "未分類訂單";
                         if (!ordersMap[orderId]) {
                             ordersMap[orderId] = {
-                                customerName: customerName,
+                                school: item.school,
                                 items: []
                             };
                         }
-                        if (itemName || itemCode) {
-                            ordersMap[orderId].items.push({
-                                code: itemCode,
-                                name: itemName,
-                                qty: itemQty,
-                                status: itemStatus,
-                                date: updateDate
-                            });
-                        }
+                        ordersMap[orderId].items.push({
+                            bookName: item.bookName,
+                            qty: item.qty,
+                            totalPrice: item.totalPrice,
+                            publicStatus: item.publicStatus,
+                            updateDate: item.updateDate
+                        });
                     });
 
-                    let html = `<h3 style="margin: 15px 0 10px 0; font-size:1.1rem; color:#444; text-align:left;">為你找到以下名下所有訂單：</h3>`;
+                    let html = `<h3 style="margin: 15px 0 10px 0; font-size:1.1rem; color:#444; text-align:left;">為你找到以下訂單：</h3>`;
                     
                     for (let orderId in ordersMap) {
                         let ord = ordersMap[orderId];
                         
                         let itemsHtml = ord.items.map(i => {
-                            let codeDisplay = i.code ? `[代號: ${i.code}] ` : '';
                             let qtyDisplay = `<span class="item-qty">x${i.qty} 件</span>`;
-                            let dateDisplay = i.date ? `<span class="item-date">更新: ${i.date}</span>` : '';
+                            let dateDisplay = i.updateDate ? `<span class="item-date">更新: ${i.updateDate.substring(0, 10)}</span>` : '';
                             
                             return `
                                 <li class="item-row">
                                     <div class="item-left">
-                                        <span class="item-name">${codeDisplay}${i.name} ${qtyDisplay}</span>
+                                        <span class="item-name">${i.bookName} ${qtyDisplay}</span>
+                                        <span style="font-size:0.8rem; color:#666;">折實價: $${i.totalPrice}</span>
                                     </div>
                                     <div class="item-right">
-                                        <span class="item-status">${i.status}</span>
+                                        <span class="item-status">${i.publicStatus}</span>
                                         ${dateDisplay}
                                     </div>
                                 </li>
@@ -179,7 +157,7 @@
                                 <div class="order-header">
                                     <span class="order-id">🔖 訂單編號: ${orderId}</span>
                                 </div>
-                                <p style="font-size:0.9rem; color:#666; margin-bottom:8px;">👤 客戶姓名：${ord.customerName}</p>
+                                <p style="font-size:0.9rem; color:#666; margin-bottom:8px;">🏫 學校：${ord.school || '門市訂單'}</p>
                                 <p style="font-size:0.9rem; font-weight:bold; margin-bottom:4px;">🛒 購買明細：</p>
                                 <ul class="order-items">
                                     ${itemsHtml}
@@ -189,11 +167,14 @@
                     }
 
                     resultArea.innerHTML = html;
-                },
-                error: function(err) {
-                    resultArea.innerHTML = `<p class="error-msg">讀取資料失敗，請檢查 Google 試算表網址。</p>`;
+
+                } else {
+                    resultArea.innerHTML = `<p class="error-msg">${result.message || "查詢失敗，請稍後再試。"}</p>`;
                 }
-            });
+
+            } catch (err) {
+                resultArea.innerHTML = `<p class="error-msg">連線伺服器失敗，請檢查網絡或 API 網址。</p>`;
+            }
         }
     </script>
 </body>
